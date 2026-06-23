@@ -16,14 +16,10 @@ export const becomeCreator = createServerFn({ method: "POST" })
       .update({ is_creator: true, ...(data.bio ? { bio: data.bio } : {}) })
       .eq("id", userId);
 
-    // adiciona role creator
+    // adiciona role creator (ignora conflito de unicidade)
     await supabase
       .from("user_roles")
-      .insert({ user_id: userId, role: "creator" })
-      .select()
-      .single()
-      .then(() => null)
-      .catch(() => null);
+      .insert({ user_id: userId, role: "creator" });
 
     // tiers padrão se não existirem
     const { data: existing } = await supabase
