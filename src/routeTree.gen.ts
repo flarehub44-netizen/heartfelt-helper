@@ -11,8 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ExplorarRouteImport } from './routes/explorar'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CHandleRouteImport } from './routes/c.$handle'
+import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.feed'
+import { Route as AuthenticatedAssinaturasRouteImport } from './routes/_authenticated.assinaturas'
+import { Route as AuthenticatedMensagensIndexRouteImport } from './routes/_authenticated.mensagens.index'
+import { Route as AuthenticatedMensagensConversationIdRouteImport } from './routes/_authenticated.mensagens.$conversationId'
 
 const ExplorarRoute = ExplorarRouteImport.update({
   id: '/explorar',
@@ -22,6 +27,10 @@ const ExplorarRoute = ExplorarRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,36 +43,99 @@ const CHandleRoute = CHandleRouteImport.update({
   path: '/c/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
+  id: '/feed',
+  path: '/feed',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAssinaturasRoute =
+  AuthenticatedAssinaturasRouteImport.update({
+    id: '/assinaturas',
+    path: '/assinaturas',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMensagensIndexRoute =
+  AuthenticatedMensagensIndexRouteImport.update({
+    id: '/mensagens/',
+    path: '/mensagens/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedMensagensConversationIdRoute =
+  AuthenticatedMensagensConversationIdRouteImport.update({
+    id: '/mensagens/$conversationId',
+    path: '/mensagens/$conversationId',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/explorar': typeof ExplorarRoute
+  '/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/feed': typeof AuthenticatedFeedRoute
   '/c/$handle': typeof CHandleRoute
+  '/mensagens/$conversationId': typeof AuthenticatedMensagensConversationIdRoute
+  '/mensagens/': typeof AuthenticatedMensagensIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/explorar': typeof ExplorarRoute
+  '/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/feed': typeof AuthenticatedFeedRoute
   '/c/$handle': typeof CHandleRoute
+  '/mensagens/$conversationId': typeof AuthenticatedMensagensConversationIdRoute
+  '/mensagens': typeof AuthenticatedMensagensIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/auth': typeof AuthRoute
   '/explorar': typeof ExplorarRoute
+  '/_authenticated/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/_authenticated/feed': typeof AuthenticatedFeedRoute
   '/c/$handle': typeof CHandleRoute
+  '/_authenticated/mensagens/$conversationId': typeof AuthenticatedMensagensConversationIdRoute
+  '/_authenticated/mensagens/': typeof AuthenticatedMensagensIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/explorar' | '/c/$handle'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/explorar'
+    | '/assinaturas'
+    | '/feed'
+    | '/c/$handle'
+    | '/mensagens/$conversationId'
+    | '/mensagens/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/explorar' | '/c/$handle'
-  id: '__root__' | '/' | '/auth' | '/explorar' | '/c/$handle'
+  to:
+    | '/'
+    | '/auth'
+    | '/explorar'
+    | '/assinaturas'
+    | '/feed'
+    | '/c/$handle'
+    | '/mensagens/$conversationId'
+    | '/mensagens'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/explorar'
+    | '/_authenticated/assinaturas'
+    | '/_authenticated/feed'
+    | '/c/$handle'
+    | '/_authenticated/mensagens/$conversationId'
+    | '/_authenticated/mensagens/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   AuthRoute: typeof AuthRoute
   ExplorarRoute: typeof ExplorarRoute
   CHandleRoute: typeof CHandleRoute
@@ -85,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -99,11 +178,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/feed': {
+      id: '/_authenticated/feed'
+      path: '/feed'
+      fullPath: '/feed'
+      preLoaderRoute: typeof AuthenticatedFeedRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/assinaturas': {
+      id: '/_authenticated/assinaturas'
+      path: '/assinaturas'
+      fullPath: '/assinaturas'
+      preLoaderRoute: typeof AuthenticatedAssinaturasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/mensagens/': {
+      id: '/_authenticated/mensagens/'
+      path: '/mensagens'
+      fullPath: '/mensagens/'
+      preLoaderRoute: typeof AuthenticatedMensagensIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/mensagens/$conversationId': {
+      id: '/_authenticated/mensagens/$conversationId'
+      path: '/mensagens/$conversationId'
+      fullPath: '/mensagens/$conversationId'
+      preLoaderRoute: typeof AuthenticatedMensagensConversationIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedAssinaturasRoute: typeof AuthenticatedAssinaturasRoute
+  AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
+  AuthenticatedMensagensConversationIdRoute: typeof AuthenticatedMensagensConversationIdRoute
+  AuthenticatedMensagensIndexRoute: typeof AuthenticatedMensagensIndexRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAssinaturasRoute: AuthenticatedAssinaturasRoute,
+  AuthenticatedFeedRoute: AuthenticatedFeedRoute,
+  AuthenticatedMensagensConversationIdRoute:
+    AuthenticatedMensagensConversationIdRoute,
+  AuthenticatedMensagensIndexRoute: AuthenticatedMensagensIndexRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   AuthRoute: AuthRoute,
   ExplorarRoute: ExplorarRoute,
   CHandleRoute: CHandleRoute,
