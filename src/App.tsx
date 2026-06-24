@@ -27,6 +27,8 @@ import PendingApproval from "./pages/PendingApproval";
 import FanOnboarding from "./pages/FanOnboarding";
 import Subscriptions from "./pages/Subscriptions";
 import Bookmarks from "./pages/Bookmarks";
+import CreatorByHandle from "./pages/CreatorByHandle";
+import PostDetail from "./pages/PostDetail";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,8 @@ const App = () => {
             <Route path="/" element={<Index />} />
             <Route path="/discover" element={<Discover />} />
             <Route path="/creator/:id" element={<CreatorProfile />} />
+            <Route path="/u/:handle" element={<CreatorByHandle />} />
+            <Route path="/p/:id" element={<PostDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
