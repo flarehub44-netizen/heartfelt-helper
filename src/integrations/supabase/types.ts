@@ -1275,6 +1275,7 @@ export type Database = {
           unlocked: boolean
         }[]
       }
+      get_platform_health: { Args: never; Returns: Json }
       get_platform_stats: {
         Args: never
         Returns: {
@@ -1283,6 +1284,17 @@ export type Database = {
           total_creators: number
           total_fans: number
           total_posts: number
+        }[]
+      }
+      get_rate_limit_logs: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          hourly_count: number
+          id: string
+          user_handle: string
+          user_id: string
+          user_name: string
         }[]
       }
       has_role: {
