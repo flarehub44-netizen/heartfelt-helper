@@ -33,7 +33,7 @@ export function normalizePlanName(name: string): PlanTier | "free" {
   if (n === "fa" || n === "fan") return "fan";
   if (n.includes("super")) return "superfan";
   if (n.includes("vip")) return "vip";
-  if (PLAN_ORDER.includes(n as PlanTier)) return n as PlanTier;
+  if ((PLAN_ORDER as readonly string[]).includes(n)) return n as PlanTier;
   return "fan";
 }
 

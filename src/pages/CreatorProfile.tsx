@@ -214,7 +214,7 @@ const CreatorProfile = () => {
     onError: () => toast.error("Erro ao excluir post"),
   });
 
-  const PLAN_LABELS: Record<string, { label: string; emoji: string }> = {
+  const POST_PLAN_LABELS: Record<string, { label: string; emoji: string }> = {
     free: { label: "Todos", emoji: "🌐" },
     fan: { label: "Fã", emoji: "💖" },
     superfan: { label: "Super Fã", emoji: "🔥" },
@@ -1048,7 +1048,7 @@ const CreatorProfile = () => {
             ) : (
               <div className="grid grid-cols-3 gap-2">
                 {myPosts.map((post) => {
-                  const planInfo = PLAN_LABELS[post.min_plan] ?? PLAN_LABELS.free;
+                  const planInfo = POST_PLAN_LABELS[post.min_plan] ?? POST_PLAN_LABELS.free;
                   return (
                     <div key={post.id} className="group relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/40">
                       {post.media_url ? (

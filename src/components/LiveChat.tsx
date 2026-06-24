@@ -35,7 +35,7 @@ export function LiveChat({ liveId, className }: LiveChatProps) {
       .order("created_at", { ascending: true })
       .limit(50)
       .then(({ data }) => {
-        if (data) setMessages(data as ChatMessage[]);
+        if (data) setMessages(data as unknown as ChatMessage[]);
       });
   }, [liveId]);
 

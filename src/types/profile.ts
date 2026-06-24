@@ -38,6 +38,7 @@ export interface PostWithCreator {
     name: string;
     handle: string | null;
     avatar_url: string | null;
+    category?: string | null;
   };
 }
 
