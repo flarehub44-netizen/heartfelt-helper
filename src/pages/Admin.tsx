@@ -1233,6 +1233,7 @@ export default function Admin() {
       case "financial": return <FinancialTab />;
       case "affiliates": return <AffiliatesTab />;
       case "conversion": return <ConversionTab />;
+      case "health": return <HealthTab />;
     }
   };
 
