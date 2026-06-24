@@ -12,6 +12,7 @@ import { useCreators } from "@/hooks/useCreators";
 import { useFanPreferences } from "@/hooks/useFanPreferences";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMySubscriptionMap } from "@/hooks/useMySubscriptions";
+import { useMyFollows } from "@/hooks/useMyFollows";
 import { planMeetsMin, PLAN_LABELS, getCheapestPlanForMin } from "@/lib/plans";
 import { getLoginPath } from "@/lib/authRedirect";
 import { useComments } from "@/hooks/useComments";
