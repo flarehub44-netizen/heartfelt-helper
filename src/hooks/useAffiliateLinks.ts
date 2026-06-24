@@ -15,7 +15,7 @@ export function useAffiliateLinks(creatorId?: string) {
     enabled: !!user,
     queryFn: async () => {
       let q = supabase
-        .from("affiliate_links" as any)
+        .from("affiliate_links")
         .select("*")
         .eq("affiliate_id", user!.id)
         .order("created_at", { ascending: false });
@@ -30,7 +30,7 @@ export function useAffiliateLinks(creatorId?: string) {
     mutationFn: async (cId: string) => {
       const code = generateCode();
       const { data, error } = await supabase
-        .from("affiliate_links" as any)
+        .from("affiliate_links")
         .insert({ affiliate_id: user!.id, creator_id: cId, code })
         .select()
         .single();

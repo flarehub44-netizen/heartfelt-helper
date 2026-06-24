@@ -22,7 +22,7 @@ import { useAffiliateLinks } from "@/hooks/useAffiliateLinks";
 import { useMyAffiliateRequest, useCreateAffiliateRequest } from "@/hooks/useAffiliateRequests";
 import { useCreatorPixel } from "@/hooks/useCreatorPixel";
 import { getLoginPath } from "@/lib/authRedirect";
-import { normalizePlanName, PLAN_LABELS, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
+import { normalizePlanName, PLAN_LABELS, PLAN_BADGES, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
 import { trackConversion } from "@/lib/conversionEvents";
 import { useMeta } from "@/hooks/useMeta";
 import { useCreatorLives, useManageLives, getEmbedUrl } from "@/hooks/useCreatorLives";
@@ -214,12 +214,7 @@ const CreatorProfile = () => {
     onError: () => toast.error("Erro ao excluir post"),
   });
 
-  const POST_PLAN_LABELS: Record<string, { label: string; emoji: string }> = {
-    free: { label: "Todos", emoji: "🌐" },
-    fan: { label: "Fã", emoji: "💖" },
-    superfan: { label: "Super Fã", emoji: "🔥" },
-    vip: { label: "VIP", emoji: "💎" },
-  };
+  const POST_PLAN_LABELS = PLAN_BADGES;
 
   const openEdit = (post: MyPost) => {
     setEditPost(post);
@@ -287,20 +282,34 @@ const CreatorProfile = () => {
     handle: realProfile.handle || "criador",
   };
 
-  const plans = realPlans.length
+  type PlanCard = {
+    name: string;
+    planKey: string;
+    emoji: string;
+    desc: string;
+    perks: string[];
+    price: number;
+    popular: boolean;
+  };
+
+  const plans: PlanCard[] = realPlans.length
     ? realPlans.map((p, i) => ({
         name: PLAN_LABELS[p.plan_name] ?? p.plan_name,
         planKey: p.plan_name,
         emoji: ["💖", "🔥", "💎"][i % 3],
-        desc: (p as any).description || (defaultPlans[i % 3]?.desc ?? ""),
+        desc: (p as { description?: string }).description || (defaultPlans[i % 3]?.desc ?? ""),
         perks: defaultPlans[i % 3]?.perks ?? [],
         price: Number(p.price),
         popular: i === 1,
       }))
     : defaultPlans.map((p, i) => ({
-        ...p,
+        name: p.name,
         planKey: PLAN_ORDER[i] ?? "fan",
-        price: (creator as any).price * p.multiplier,
+        emoji: p.emoji,
+        desc: p.desc,
+        perks: p.perks,
+        price: creator.price * p.multiplier,
+        popular: p.popular,
       }));
 
   // Build display posts from real data
@@ -325,7 +334,7 @@ const CreatorProfile = () => {
       return;
     }
     if (!hasAccessTo(minPlan)) {
-      const idx = plans.findIndex((p) => normalizePlanName((p as { planKey?: string }).planKey ?? p.name) === normalizePlanName(minPlan));
+      const idx = plans.findIndex((p) => normalizePlanName(p.planKey ?? p.name) === normalizePlanName(minPlan));
       setSelectedPlan(idx >= 0 ? idx : 0);
       setPixModalOpen(true);
     }
@@ -333,7 +342,7 @@ const CreatorProfile = () => {
 
   const currentSubRank = subscription?.plan ? planRank(subscription.plan) : 0;
   const upgradePlanIndex = isSubscribed
-    ? plans.findIndex((p) => planRank((p as { planKey: string }).planKey) > currentSubRank)
+    ? plans.findIndex((p) => planRank(p.planKey) > currentSubRank)
     : -1;
 
   const highestLockedPlan = displayPosts
@@ -345,8 +354,8 @@ const CreatorProfile = () => {
     isSubscribed && highestLockedPlan
       ? plans.findIndex(
           (p) =>
-            planRank((p as { planKey: string }).planKey) >= planRank(highestLockedPlan) &&
-            planRank((p as { planKey: string }).planKey) > currentSubRank
+            planRank(p.planKey) >= planRank(highestLockedPlan) &&
+            planRank(p.planKey) > currentSubRank
         )
       : -1;
 
@@ -371,7 +380,7 @@ const CreatorProfile = () => {
 
   const getCheckoutAmount = (planIdx: number) => {
     if (isSubscribed && subscription?.plan && planIdx >= 0) {
-      const targetKey = (plans[planIdx] as { planKey: string }).planKey;
+      const targetKey = plans[planIdx].planKey;
       const diff = getUpgradePriceDiff(dbPlans, subscription.plan, targetKey);
       return diff > 0 ? diff : plans[planIdx].price;
     }
@@ -400,7 +409,7 @@ const CreatorProfile = () => {
       creator_pixel_id: creatorPixelId,
       creator_access_token: creatorAccessToken,
     });
-    trackConversion("checkout_initiated", { creatorId: id, metadata: { plan: (plans[planIdx] as { planKey: string }).planKey } });
+    trackConversion("checkout_initiated", { creatorId: id, metadata: { plan: plans[planIdx].planKey } });
     setPixModalOpen(true);
   };
 
@@ -1102,7 +1111,7 @@ const CreatorProfile = () => {
             onSuccess={() => {}}
             creatorId={id!}
             creatorName={creator.name}
-            planName={(plans[selectedPlan] as { planKey: string }).planKey}
+            planName={plans[selectedPlan].planKey}
             amount={getCheckoutAmount(selectedPlan)}
             fanId={user.id}
             fanEmail={user.email ?? ""}

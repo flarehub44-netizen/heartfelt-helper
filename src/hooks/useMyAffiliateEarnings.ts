@@ -28,7 +28,7 @@ export function useMyAffiliateEarnings() {
     queryFn: async () => {
       // Get all affiliate links for this user
       const { data: links, error: linksErr } = await supabase
-        .from("affiliate_links" as any)
+        .from("affiliate_links")
         .select("id, creator_id")
         .eq("affiliate_id", user!.id);
       if (linksErr) throw linksErr;
@@ -39,7 +39,7 @@ export function useMyAffiliateEarnings() {
 
       const [referralsResult, profilesResult] = await Promise.all([
         supabase
-          .from("affiliate_referrals" as any)
+          .from("affiliate_referrals")
           .select("id, affiliate_link_id, commission_amount, commission_rate, status, created_at")
           .in("affiliate_link_id", linkIds)
           .order("created_at", { ascending: false }),

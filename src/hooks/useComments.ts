@@ -23,7 +23,7 @@ export function useComments(postId: string) {
     queryKey: ["comments", postId],
     queryFn: async (): Promise<Comment[]> => {
       const { data, error } = await supabase
-        .from("post_comments" as any)
+        .from("post_comments")
         .select("*, author:profiles!post_comments_author_id_fkey(name, handle, avatar_url)")
         .eq("post_id", postId)
         .order("created_at", { ascending: true });
@@ -49,7 +49,7 @@ export function useComments(postId: string) {
   const addComment = useMutation({
     mutationFn: async ({ text, authorId, parentId }: { text: string; authorId: string; parentId?: string }) => {
       const { error } = await supabase
-        .from("post_comments" as any)
+        .from("post_comments")
         .insert({ post_id: postId, author_id: authorId, text, parent_id: parentId ?? null });
       if (error) throw error;
     },

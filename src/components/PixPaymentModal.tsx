@@ -122,7 +122,7 @@ export function PixPaymentModal({
   // Track abandoned checkout when PIX expires (fire-and-forget)
   useEffect(() => {
     if (secondsLeft !== 0 || step !== "pix" || planName === "tip") return;
-    void supabase.rpc("record_checkout_abandoned" as any, {
+    void supabase.rpc("record_checkout_abandoned", {
       p_fan_id: fanId,
       p_creator_id: creatorId,
       p_plan_name: planName,
