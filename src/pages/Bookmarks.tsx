@@ -6,6 +6,7 @@ import { useToggleBookmark } from "@/hooks/useBookmarks";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SignedImage } from "@/components/SignedMedia";
 
 const PLAN_BADGE: Record<string, string> = {
   fan: "💖 Fã",
@@ -66,7 +67,7 @@ const Bookmarks = () => {
                 {/* Thumbnail */}
                 <div className="w-24 h-24 flex-shrink-0 bg-muted/30 relative overflow-hidden">
                   {post.media_url && post.media_type === "image" ? (
-                    <img src={post.media_url} alt="" className="h-full w-full object-cover" />
+                    <SignedImage src={post.media_url} alt="" className="h-full w-full object-cover" />
                   ) : post.media_url && post.media_type === "video" ? (
                     <div className="h-full w-full flex items-center justify-center bg-muted/50">
                       <span className="text-2xl">🎬</span>

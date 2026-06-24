@@ -134,12 +134,11 @@ const Dashboard = () => {
         .upload(path, previewFile);
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from("content").getPublicUrl(path);
       const mediaType = previewFile.type.startsWith("video") ? "video" : "image";
       const { error: postError } = await supabase.from("posts").insert({
         creator_id: user.id,
         text: postText || null,
-        media_url: urlData.publicUrl,
+        media_url: path,
         media_type: mediaType,
         min_plan: minPlan,
       });

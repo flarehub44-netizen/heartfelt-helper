@@ -28,6 +28,7 @@ import { useAdminPosts, useAdminDeletePost } from "@/hooks/useAdminPosts";
 import { useAdminCreators, useAdminPendingCreators, useApproveCreator } from "@/hooks/useAdminCreators";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { SignedImage } from "@/components/SignedMedia";
 import { useToast } from "@/hooks/use-toast";
 import { useMonthlyRevenue } from "@/hooks/useMonthlyRevenue";
 import { useAffiliateFeeRate, useUpdateAffiliateFee, useAffiliateOverview } from "@/hooks/useAffiliateStats";
@@ -516,7 +517,7 @@ function PostsTab() {
                             🎬
                           </div>
                         ) : (
-                          <img
+                          <SignedImage
                             src={post.media_url}
                             alt=""
                             className="h-10 w-10 rounded object-cover"

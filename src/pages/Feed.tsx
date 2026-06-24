@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { avatarUrl, thumbUrl } from "@/lib/imageTransform";
 import { trackPostView } from "@/hooks/usePostStats";
 import { useBookmarks, useToggleBookmark } from "@/hooks/useBookmarks";
+import { SignedImage } from "@/components/SignedMedia";
 
 interface PixModalState {
   creatorId: string;
@@ -442,8 +443,8 @@ const Feed = () => {
 
               {post.image ? (
                 <div className="relative">
-                  <img
-                    src={post.locked ? post.image : thumbUrl(post.image)}
+                  <SignedImage
+                    src={post.image}
                     alt="Post"
                     className={`w-full aspect-[4/3] object-cover ${post.locked ? "blur-xl scale-105" : ""}`}
                   />
