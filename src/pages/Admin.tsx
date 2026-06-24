@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
-  LayoutDashboard, Users, Star, FileText, DollarSign, LogOut, Flame, Trash2, Eye, Shield, CheckCircle, Clock, Link2, TrendingUp,
+  LayoutDashboard, Users, Star, FileText, DollarSign, LogOut, Flame, Trash2, Eye, Shield, CheckCircle, Clock, Link2, TrendingUp, Activity, AlertTriangle,
 } from "lucide-react";
 import {
   SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarMenu,
@@ -34,8 +34,9 @@ import { useMonthlyRevenue } from "@/hooks/useMonthlyRevenue";
 import { useAffiliateFeeRate, useUpdateAffiliateFee, useAffiliateOverview } from "@/hooks/useAffiliateStats";
 import { useAdminAffiliateRequests, useUpdateAffiliateRequest } from "@/hooks/useAffiliateRequests";
 import { useConversionStats } from "@/hooks/useConversionStats";
+import { usePlatformHealth, useRateLimitLogs } from "@/hooks/usePlatformHealth";
 
-type Section = "overview" | "users" | "creators" | "posts" | "financial" | "affiliates" | "conversion";
+type Section = "overview" | "users" | "creators" | "posts" | "financial" | "affiliates" | "conversion" | "health";
 
 const navItems = [
   { id: "overview" as Section, label: "Visão Geral", icon: LayoutDashboard },
@@ -45,6 +46,7 @@ const navItems = [
   { id: "financial" as Section, label: "Financeiro", icon: DollarSign },
   { id: "affiliates" as Section, label: "Afiliados", icon: Link2 },
   { id: "conversion" as Section, label: "Conversão", icon: TrendingUp },
+  { id: "health" as Section, label: "Saúde", icon: Activity },
 ];
 
 // ── Overview Tab ────────────────────────────────────────────────────────────
@@ -1123,6 +1125,100 @@ function ConversionTab() {
   );
 }
 
+// ── Health Tab ───────────────────────────────────────────────────────────────
+function HealthTab() {
+  const { data: health, isLoading } = usePlatformHealth();
+  const { data: logs, isLoading: logsLoading } = useRateLimitLogs(100);
+
+  const cards = [
+    { label: "PIX última 1h", value: health?.pix_last_hour, icon: Activity, color: "text-blue-500" },
+    { label: "PIX últimas 24h", value: health?.pix_last_24h, icon: Activity, color: "text-blue-500" },
+    { label: "Usuários bloqueados (1h)", value: health?.pix_throttled_users, icon: AlertTriangle, color: "text-destructive" },
+    { label: "Pagamentos pendentes (24h)", value: health?.pending_payments_24h, icon: Clock, color: "text-yellow-500" },
+    { label: "Criadores pendentes", value: health?.pending_creators, icon: Star, color: "text-yellow-500" },
+    { label: "Novos cadastros (24h)", value: health?.new_signups_24h, icon: Users, color: "text-green-500" },
+    { label: "Novas assinaturas (24h)", value: health?.new_subs_24h, icon: Shield, color: "text-green-500" },
+    { label: "Expiram em 7 dias", value: health?.expiring_subs_7d, icon: Clock, color: "text-orange-500" },
+    { label: "Posts (24h)", value: health?.posts_24h, icon: FileText, color: "text-purple-500" },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-2xl font-bold">Saúde da Plataforma</h2>
+        <p className="text-sm text-muted-foreground">Atualiza automaticamente a cada 30 segundos.</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4">
+        {cards.map(({ label, value, icon: Icon, color }) => (
+          <Card key={label}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+              <Icon className={`h-4 w-4 ${color}`} />
+            </CardHeader>
+            <CardContent>
+              {isLoading ? <Skeleton className="h-8 w-20" /> : <div className="text-2xl font-bold">{value ?? 0}</div>}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            Logs de Rate-Limit PIX (últimas 100 tentativas)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Usuário</TableHead>
+                <TableHead>Handle</TableHead>
+                <TableHead>Quando</TableHead>
+                <TableHead>Tentativas na última hora</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logsLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 4 }).map((_, j) => (
+                      <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (logs ?? []).length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                    Nenhuma tentativa registrada.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                (logs ?? []).map((l) => (
+                  <TableRow key={l.id}>
+                    <TableCell className="font-medium">{l.user_name ?? l.user_id.slice(0, 8)}</TableCell>
+                    <TableCell className="text-muted-foreground">{l.user_handle ? `@${l.user_handle}` : "—"}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(l.created_at).toLocaleString("pt-BR")}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={l.hourly_count >= 10 ? "destructive" : l.hourly_count >= 5 ? "default" : "secondary"}>
+                        {l.hourly_count} {l.hourly_count >= 10 ? "(bloqueado)" : ""}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Main Admin Page ──────────────────────────────────────────────────────────
 export default function Admin() {
   const [activeSection, setActiveSection] = useState<Section>("overview");
@@ -1137,6 +1233,7 @@ export default function Admin() {
       case "financial": return <FinancialTab />;
       case "affiliates": return <AffiliatesTab />;
       case "conversion": return <ConversionTab />;
+      case "health": return <HealthTab />;
     }
   };
 
