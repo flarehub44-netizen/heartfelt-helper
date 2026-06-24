@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Coins, Loader2, Sparkles, ArrowDownRight, ArrowUpRight, Gift, Heart, Lock } from "lucide-react";
+import { Coins, Loader2, Sparkles, ArrowDownRight, ArrowUpRight, Gift, Heart, Lock, AlertCircle, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/hooks/useWallet";
@@ -12,6 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+
+const LOW_BALANCE_THRESHOLD = 50;
+
 
 type Package = {
   id: string; coins: number; price_brl: number; bonus: number; label: string | null;
@@ -65,6 +68,25 @@ export default function Wallet() {
     enabled: !!user,
   });
 
+  // First purchase = no "purchase" tx in history yet
+  const { data: hasPurchasedBefore = false } = useQuery({
+    queryKey: ["has-purchased", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count } = await supabase
+        .from("coin_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("type", "purchase");
+      return (count ?? 0) > 0;
+    },
+    enabled: !!user,
+  });
+  const isFirstPurchase = !hasPurchasedBefore;
+  const balance = wallet?.balance ?? 0;
+  const isLowBalance = balance < LOW_BALANCE_THRESHOLD;
+
+
   // Realtime: refresh balance when a new tx hits
   useEffect(() => {
     if (!user) return;
@@ -91,35 +113,83 @@ export default function Wallet() {
           <p className="text-sm opacity-80">Seu saldo</p>
           <div className="flex items-center gap-3 mt-2">
             <Coins className="h-8 w-8" />
-            <span className="text-5xl font-bold">{(wallet?.balance ?? 0).toLocaleString("pt-BR")}</span>
+            <span className="text-5xl font-bold">{balance.toLocaleString("pt-BR")}</span>
             <span className="text-lg opacity-80 mt-2">moedas</span>
           </div>
         </section>
 
-        {/* Packages */}
-        <h2 className="text-xl font-bold mt-10 mb-4">Comprar moedas</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {packages.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setBuying(p)}
-              className="group relative rounded-2xl border border-border/60 bg-card p-4 text-left hover:border-primary/60 hover:shadow-glow transition-all"
-            >
-              {p.bonus > 0 && (
-                <span className="absolute -top-2 right-3 rounded-full bg-yellow-500 text-black px-2 py-0.5 text-[10px] font-bold">
-                  +{p.bonus} bônus
-                </span>
-              )}
-              <Coins className="h-6 w-6 text-yellow-400 mb-2" />
-              <p className="text-2xl font-bold text-foreground">{p.coins + p.bonus}</p>
-              <p className="text-xs text-muted-foreground">moedas</p>
-              <p className="mt-3 text-sm font-semibold text-primary">
-                R$ {Number(p.price_brl).toFixed(2).replace(".", ",")}
+        {/* Low balance banner */}
+        {isLowBalance && balance > 0 && (
+          <div className="mt-4 flex items-center gap-3 rounded-2xl border border-yellow-500/40 bg-yellow-500/10 p-4">
+            <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground">Seu saldo está baixo</p>
+              <p className="text-xs text-muted-foreground">
+                Recarregue para continuar desbloqueando posts e enviando gorjetas.
               </p>
-              {p.label && <p className="text-[10px] text-muted-foreground mt-1">{p.label}</p>}
-            </button>
-          ))}
+            </div>
+            <a
+              href="#packages"
+              className="rounded-full bg-yellow-500 text-black px-4 py-1.5 text-xs font-bold hover:scale-105 transition-transform flex-shrink-0"
+            >
+              Recarregar
+            </a>
+          </div>
+        )}
+
+        {/* First purchase promo */}
+        {isFirstPurchase && (
+          <div className="mt-4 relative overflow-hidden rounded-2xl border border-primary/40 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-primary shadow-glow flex-shrink-0">
+              <Flame className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Oferta de boas-vindas</p>
+              <p className="text-xs text-muted-foreground">
+                Sua <strong className="text-foreground">primeira recarga</strong> vem com bônus extra. Escolha um pacote abaixo.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Packages */}
+        <h2 id="packages" className="text-xl font-bold mt-10 mb-4 scroll-mt-24">Comprar moedas</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {packages.map((p, idx) => {
+            // Highlight the "popular" middle package (or 2nd) as the first-purchase recommendation
+            const isFeatured = isFirstPurchase && idx === Math.min(1, packages.length - 1);
+            return (
+              <button
+                key={p.id}
+                onClick={() => setBuying(p)}
+                className={`group relative rounded-2xl border p-4 text-left transition-all ${
+                  isFeatured
+                    ? "border-primary/70 bg-primary/5 shadow-glow ring-1 ring-primary/40"
+                    : "border-border/60 bg-card hover:border-primary/60 hover:shadow-glow"
+                }`}
+              >
+                {isFeatured && (
+                  <span className="absolute -top-2 left-3 rounded-full bg-gradient-primary text-primary-foreground px-2 py-0.5 text-[10px] font-bold shadow-glow whitespace-nowrap">
+                    Recomendado p/ você
+                  </span>
+                )}
+                {p.bonus > 0 && (
+                  <span className="absolute -top-2 right-3 rounded-full bg-yellow-500 text-black px-2 py-0.5 text-[10px] font-bold">
+                    +{p.bonus} bônus
+                  </span>
+                )}
+                <Coins className="h-6 w-6 text-yellow-400 mb-2" />
+                <p className="text-2xl font-bold text-foreground">{p.coins + p.bonus}</p>
+                <p className="text-xs text-muted-foreground">moedas</p>
+                <p className="mt-3 text-sm font-semibold text-primary">
+                  R$ {Number(p.price_brl).toFixed(2).replace(".", ",")}
+                </p>
+                {p.label && <p className="text-[10px] text-muted-foreground mt-1">{p.label}</p>}
+              </button>
+            );
+          })}
         </div>
+
 
         {/* History */}
         <h2 className="text-xl font-bold mt-10 mb-4">Histórico</h2>
