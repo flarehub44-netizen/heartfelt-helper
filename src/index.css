@@ -140,6 +140,38 @@
     box-shadow: 0 0 20px hsl(340 80% 58% / 0.15);
   }
 
+  /* Subtle press feedback for tappable elements */
+  .tap-scale {
+    transition: transform 0.15s ease, opacity 0.15s ease;
+  }
+  .tap-scale:active {
+    transform: scale(0.97);
+  }
+
+  /* Smooth lift on hover for cards */
+  .lift-on-hover {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+  .lift-on-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px hsl(0 0% 0% / 0.18);
+  }
+
+  /* Shimmering skeleton */
+  .shimmer {
+    background: linear-gradient(90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.08) 50%,
+      hsl(var(--muted)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+
   /* Noise texture overlay */
   .noise-overlay::after {
     content: '';
