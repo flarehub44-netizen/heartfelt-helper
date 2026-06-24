@@ -16,7 +16,7 @@ function SubscriptionsPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("subscriptions")
-        .select("id, status, current_period_end, started_at, tier:tiers(name, sort_order, price_brl_cents), creator:profiles!subscriptions_creator_id_fkey(handle, display_name, avatar_url)")
+        .select("id, status, current_period_end, started_at, tier:tiers(name, sort_order, price_brl_cents), creator:profiles!subs_creator_profile_fkey(handle, display_name, avatar_url)")
         .eq("fan_id", user!.id)
         .order("started_at", { ascending: false });
       return data ?? [];

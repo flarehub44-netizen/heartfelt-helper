@@ -18,7 +18,7 @@ function FeedPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("subscriptions")
-        .select("creator_id, status, tier_id, tier:tiers(name, sort_order), creator:profiles!subscriptions_creator_id_fkey(handle, display_name, avatar_url)")
+        .select("creator_id, status, tier_id, tier:tiers(name, sort_order), creator:profiles!subs_creator_profile_fkey(handle, display_name, avatar_url)")
         .eq("fan_id", user!.id)
         .eq("status", "active");
       if (error) console.error(error);
@@ -35,7 +35,7 @@ function FeedPage() {
       if (creatorIds.length === 0) return [];
       const { data, error } = await supabase
         .from("posts")
-        .select("id, title, body, media_urls, min_tier_sort_order, published_at, creator_id, creator:profiles!posts_creator_id_fkey(handle, display_name, avatar_url)")
+        .select("id, title, body, media_urls, min_tier_sort_order, published_at, creator_id, creator:profiles!posts_creator_profile_fkey(handle, display_name, avatar_url)")
         .in("creator_id", creatorIds)
         .order("published_at", { ascending: false })
         .limit(50);

@@ -15,9 +15,15 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CHandleRouteImport } from './routes/c.$handle'
 import { Route as AuthenticatedFeedRouteImport } from './routes/_authenticated.feed'
+import { Route as AuthenticatedEstudioRouteImport } from './routes/_authenticated.estudio'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated.configuracoes'
+import { Route as AuthenticatedCarteiraRouteImport } from './routes/_authenticated.carteira'
 import { Route as AuthenticatedAssinaturasRouteImport } from './routes/_authenticated.assinaturas'
 import { Route as AuthenticatedMensagensIndexRouteImport } from './routes/_authenticated.mensagens.index'
+import { Route as AuthenticatedEstudioIndexRouteImport } from './routes/_authenticated.estudio.index'
 import { Route as AuthenticatedMensagensConversationIdRouteImport } from './routes/_authenticated.mensagens.$conversationId'
+import { Route as AuthenticatedEstudioTiersRouteImport } from './routes/_authenticated.estudio.tiers'
+import { Route as AuthenticatedEstudioPostsRouteImport } from './routes/_authenticated.estudio.posts'
 
 const ExplorarRoute = ExplorarRouteImport.update({
   id: '/explorar',
@@ -48,6 +54,22 @@ const AuthenticatedFeedRoute = AuthenticatedFeedRouteImport.update({
   path: '/feed',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedEstudioRoute = AuthenticatedEstudioRouteImport.update({
+  id: '/estudio',
+  path: '/estudio',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedConfiguracoesRoute =
+  AuthenticatedConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedCarteiraRoute = AuthenticatedCarteiraRouteImport.update({
+  id: '/carteira',
+  path: '/carteira',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAssinaturasRoute =
   AuthenticatedAssinaturasRouteImport.update({
     id: '/assinaturas',
@@ -60,11 +82,29 @@ const AuthenticatedMensagensIndexRoute =
     path: '/mensagens/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedEstudioIndexRoute =
+  AuthenticatedEstudioIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedEstudioRoute,
+  } as any)
 const AuthenticatedMensagensConversationIdRoute =
   AuthenticatedMensagensConversationIdRouteImport.update({
     id: '/mensagens/$conversationId',
     path: '/mensagens/$conversationId',
     getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedEstudioTiersRoute =
+  AuthenticatedEstudioTiersRouteImport.update({
+    id: '/tiers',
+    path: '/tiers',
+    getParentRoute: () => AuthenticatedEstudioRoute,
+  } as any)
+const AuthenticatedEstudioPostsRoute =
+  AuthenticatedEstudioPostsRouteImport.update({
+    id: '/posts',
+    path: '/posts',
+    getParentRoute: () => AuthenticatedEstudioRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -72,9 +112,15 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/explorar': typeof ExplorarRoute
   '/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/carteira': typeof AuthenticatedCarteiraRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/estudio': typeof AuthenticatedEstudioRouteWithChildren
   '/feed': typeof AuthenticatedFeedRoute
   '/c/$handle': typeof CHandleRoute
+  '/estudio/posts': typeof AuthenticatedEstudioPostsRoute
+  '/estudio/tiers': typeof AuthenticatedEstudioTiersRoute
   '/mensagens/$conversationId': typeof AuthenticatedMensagensConversationIdRoute
+  '/estudio/': typeof AuthenticatedEstudioIndexRoute
   '/mensagens/': typeof AuthenticatedMensagensIndexRoute
 }
 export interface FileRoutesByTo {
@@ -82,9 +128,14 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/explorar': typeof ExplorarRoute
   '/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/carteira': typeof AuthenticatedCarteiraRoute
+  '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/feed': typeof AuthenticatedFeedRoute
   '/c/$handle': typeof CHandleRoute
+  '/estudio/posts': typeof AuthenticatedEstudioPostsRoute
+  '/estudio/tiers': typeof AuthenticatedEstudioTiersRoute
   '/mensagens/$conversationId': typeof AuthenticatedMensagensConversationIdRoute
+  '/estudio': typeof AuthenticatedEstudioIndexRoute
   '/mensagens': typeof AuthenticatedMensagensIndexRoute
 }
 export interface FileRoutesById {
@@ -94,9 +145,15 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/explorar': typeof ExplorarRoute
   '/_authenticated/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/_authenticated/carteira': typeof AuthenticatedCarteiraRoute
+  '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
+  '/_authenticated/estudio': typeof AuthenticatedEstudioRouteWithChildren
   '/_authenticated/feed': typeof AuthenticatedFeedRoute
   '/c/$handle': typeof CHandleRoute
+  '/_authenticated/estudio/posts': typeof AuthenticatedEstudioPostsRoute
+  '/_authenticated/estudio/tiers': typeof AuthenticatedEstudioTiersRoute
   '/_authenticated/mensagens/$conversationId': typeof AuthenticatedMensagensConversationIdRoute
+  '/_authenticated/estudio/': typeof AuthenticatedEstudioIndexRoute
   '/_authenticated/mensagens/': typeof AuthenticatedMensagensIndexRoute
 }
 export interface FileRouteTypes {
@@ -106,9 +163,15 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explorar'
     | '/assinaturas'
+    | '/carteira'
+    | '/configuracoes'
+    | '/estudio'
     | '/feed'
     | '/c/$handle'
+    | '/estudio/posts'
+    | '/estudio/tiers'
     | '/mensagens/$conversationId'
+    | '/estudio/'
     | '/mensagens/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -116,9 +179,14 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explorar'
     | '/assinaturas'
+    | '/carteira'
+    | '/configuracoes'
     | '/feed'
     | '/c/$handle'
+    | '/estudio/posts'
+    | '/estudio/tiers'
     | '/mensagens/$conversationId'
+    | '/estudio'
     | '/mensagens'
   id:
     | '__root__'
@@ -127,9 +195,15 @@ export interface FileRouteTypes {
     | '/auth'
     | '/explorar'
     | '/_authenticated/assinaturas'
+    | '/_authenticated/carteira'
+    | '/_authenticated/configuracoes'
+    | '/_authenticated/estudio'
     | '/_authenticated/feed'
     | '/c/$handle'
+    | '/_authenticated/estudio/posts'
+    | '/_authenticated/estudio/tiers'
     | '/_authenticated/mensagens/$conversationId'
+    | '/_authenticated/estudio/'
     | '/_authenticated/mensagens/'
   fileRoutesById: FileRoutesById
 }
@@ -185,6 +259,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFeedRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/estudio': {
+      id: '/_authenticated/estudio'
+      path: '/estudio'
+      fullPath: '/estudio'
+      preLoaderRoute: typeof AuthenticatedEstudioRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/carteira': {
+      id: '/_authenticated/carteira'
+      path: '/carteira'
+      fullPath: '/carteira'
+      preLoaderRoute: typeof AuthenticatedCarteiraRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/assinaturas': {
       id: '/_authenticated/assinaturas'
       path: '/assinaturas'
@@ -199,6 +294,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMensagensIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/estudio/': {
+      id: '/_authenticated/estudio/'
+      path: '/'
+      fullPath: '/estudio/'
+      preLoaderRoute: typeof AuthenticatedEstudioIndexRouteImport
+      parentRoute: typeof AuthenticatedEstudioRoute
+    }
     '/_authenticated/mensagens/$conversationId': {
       id: '/_authenticated/mensagens/$conversationId'
       path: '/mensagens/$conversationId'
@@ -206,11 +308,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMensagensConversationIdRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/estudio/tiers': {
+      id: '/_authenticated/estudio/tiers'
+      path: '/tiers'
+      fullPath: '/estudio/tiers'
+      preLoaderRoute: typeof AuthenticatedEstudioTiersRouteImport
+      parentRoute: typeof AuthenticatedEstudioRoute
+    }
+    '/_authenticated/estudio/posts': {
+      id: '/_authenticated/estudio/posts'
+      path: '/posts'
+      fullPath: '/estudio/posts'
+      preLoaderRoute: typeof AuthenticatedEstudioPostsRouteImport
+      parentRoute: typeof AuthenticatedEstudioRoute
+    }
   }
 }
 
+interface AuthenticatedEstudioRouteChildren {
+  AuthenticatedEstudioPostsRoute: typeof AuthenticatedEstudioPostsRoute
+  AuthenticatedEstudioTiersRoute: typeof AuthenticatedEstudioTiersRoute
+  AuthenticatedEstudioIndexRoute: typeof AuthenticatedEstudioIndexRoute
+}
+
+const AuthenticatedEstudioRouteChildren: AuthenticatedEstudioRouteChildren = {
+  AuthenticatedEstudioPostsRoute: AuthenticatedEstudioPostsRoute,
+  AuthenticatedEstudioTiersRoute: AuthenticatedEstudioTiersRoute,
+  AuthenticatedEstudioIndexRoute: AuthenticatedEstudioIndexRoute,
+}
+
+const AuthenticatedEstudioRouteWithChildren =
+  AuthenticatedEstudioRoute._addFileChildren(AuthenticatedEstudioRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedAssinaturasRoute: typeof AuthenticatedAssinaturasRoute
+  AuthenticatedCarteiraRoute: typeof AuthenticatedCarteiraRoute
+  AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
+  AuthenticatedEstudioRoute: typeof AuthenticatedEstudioRouteWithChildren
   AuthenticatedFeedRoute: typeof AuthenticatedFeedRoute
   AuthenticatedMensagensConversationIdRoute: typeof AuthenticatedMensagensConversationIdRoute
   AuthenticatedMensagensIndexRoute: typeof AuthenticatedMensagensIndexRoute
@@ -218,6 +352,9 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAssinaturasRoute: AuthenticatedAssinaturasRoute,
+  AuthenticatedCarteiraRoute: AuthenticatedCarteiraRoute,
+  AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
+  AuthenticatedEstudioRoute: AuthenticatedEstudioRouteWithChildren,
   AuthenticatedFeedRoute: AuthenticatedFeedRoute,
   AuthenticatedMensagensConversationIdRoute:
     AuthenticatedMensagensConversationIdRoute,
