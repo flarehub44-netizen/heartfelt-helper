@@ -1,0 +1,32 @@
+{
+  "name": "Flare — Conteúdo Exclusivo",
+  "short_name": "Flare",
+  "description": "A plataforma que conecta criadores com seus fãs. Assinaturas, conteúdo exclusivo e pagamentos diretos.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#e8467c",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "social"],
+  "lang": "pt-BR",
+  "shortcuts": [
+    {
+      "name": "Feed",
+      "url": "/feed",
+      "description": "Ver seu feed personalizado"
+    },
+    {
+      "name": "Descobrir",
+      "url": "/discover",
+      "description": "Explorar novos criadores"
+    }
+  ]
+}

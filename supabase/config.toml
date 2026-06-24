@@ -1,1 +1,16 @@
 project_id = "yqevjcrypxepzzbrmqhb"
+
+[functions.meta-capi]
+verify_jwt = false
+
+[functions.syncpay-cashin]
+verify_jwt = false
+
+[functions.syncpay-webhook]
+verify_jwt = false
+
+[functions.send-notification]
+verify_jwt = false
+
+[functions.subscription-reminders]
+verify_jwt = false

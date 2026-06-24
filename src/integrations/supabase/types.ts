@@ -16,92 +16,208 @@ export type Database = {
     Tables: {
       affiliate_links: {
         Row: {
+          affiliate_id: string
           code: string
           created_at: string
+          creator_id: string
           id: string
-          user_id: string
         }
         Insert: {
+          affiliate_id: string
           code: string
           created_at?: string
+          creator_id: string
           id?: string
-          user_id: string
         }
         Update: {
+          affiliate_id?: string
           code?: string
           created_at?: string
+          creator_id?: string
           id?: string
-          user_id?: string
         }
         Relationships: []
       }
       affiliate_referrals: {
         Row: {
-          affiliate_user_id: string
-          commission_brl_cents: number
+          affiliate_link_id: string
+          commission_amount: number
+          commission_rate: number
           created_at: string
           id: string
-          payment_id: string | null
-          referred_user_id: string
+          status: string
+          subscription_id: string
         }
         Insert: {
-          affiliate_user_id: string
-          commission_brl_cents?: number
+          affiliate_link_id: string
+          commission_amount: number
+          commission_rate: number
           created_at?: string
           id?: string
-          payment_id?: string | null
-          referred_user_id: string
+          status?: string
+          subscription_id: string
         }
         Update: {
-          affiliate_user_id?: string
-          commission_brl_cents?: number
+          affiliate_link_id?: string
+          commission_amount?: number
+          commission_rate?: number
           created_at?: string
           id?: string
-          payment_id?: string | null
-          referred_user_id?: string
+          status?: string
+          subscription_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "affiliate_referrals_payment_id_fkey"
-            columns: ["payment_id"]
+            foreignKeyName: "affiliate_referrals_affiliate_link_id_fkey"
+            columns: ["affiliate_link_id"]
             isOneToOne: false
-            referencedRelation: "payments"
+            referencedRelation: "affiliate_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_referrals_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
             referencedColumns: ["id"]
           },
         ]
       }
-      conversations: {
+      affiliate_requests: {
+        Row: {
+          created_at: string
+          id: string
+          reviewed_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reviewed_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      creator_plans: {
+        Row: {
+          creator_id: string
+          id: string
+          plan_name: string
+          price: number
+        }
+        Insert: {
+          creator_id: string
+          id?: string
+          plan_name: string
+          price: number
+        }
+        Update: {
+          creator_id?: string
+          id?: string
+          plan_name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_plans_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversion_events: {
+        Row: {
+          created_at: string
+          creator_id: string | null
+          event_name: string
+          id: string
+          metadata: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          creator_id?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      fan_preferences: {
+        Row: {
+          categories: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          categories?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          categories?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fan_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      follows: {
         Row: {
           created_at: string
           creator_id: string
           fan_id: string
           id: string
-          last_message_at: string
         }
         Insert: {
           created_at?: string
           creator_id: string
           fan_id: string
           id?: string
-          last_message_at?: string
         }
         Update: {
           created_at?: string
           creator_id?: string
           fan_id?: string
           id?: string
-          last_message_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "conv_creator_profile_fkey"
+            foreignKeyName: "follows_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "conv_fan_profile_fkey"
+            foreignKeyName: "follows_fan_id_fkey"
             columns: ["fan_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -111,109 +227,130 @@ export type Database = {
       }
       messages: {
         Row: {
-          body: string
-          conversation_id: string
           created_at: string
           id: string
-          read_at: string | null
+          read: boolean
+          receiver_id: string
           sender_id: string
+          text: string
         }
         Insert: {
-          body: string
-          conversation_id: string
           created_at?: string
           id?: string
-          read_at?: string | null
+          read?: boolean
+          receiver_id: string
           sender_id: string
+          text: string
         }
         Update: {
-          body?: string
-          conversation_id?: string
           created_at?: string
           id?: string
-          read_at?: string | null
+          read?: boolean
+          receiver_id?: string
           sender_id?: string
+          text?: string
         }
         Relationships: [
           {
-            foreignKeyName: "messages_conversation_id_fkey"
-            columns: ["conversation_id"]
+            foreignKeyName: "messages_receiver_id_fkey"
+            columns: ["receiver_id"]
             isOneToOne: false
-            referencedRelation: "conversations"
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
       }
-      payments: {
+      pending_payments: {
         Row: {
-          amount_brl_cents: number
+          affiliate_ref: string | null
+          amount: number
           created_at: string
-          expires_at: string | null
+          creator_id: string
+          fan_id: string
           id: string
-          method: string
-          paid_at: string | null
-          pix_qr_payload: string | null
-          status: string
-          subscription_id: string | null
-          user_id: string
+          plan: string
+          syncpay_id: string
         }
         Insert: {
-          amount_brl_cents: number
+          affiliate_ref?: string | null
+          amount: number
           created_at?: string
-          expires_at?: string | null
+          creator_id: string
+          fan_id: string
           id?: string
-          method?: string
-          paid_at?: string | null
-          pix_qr_payload?: string | null
-          status?: string
-          subscription_id?: string | null
-          user_id: string
+          plan: string
+          syncpay_id: string
         }
         Update: {
-          amount_brl_cents?: number
+          affiliate_ref?: string | null
+          amount?: number
           created_at?: string
-          expires_at?: string | null
+          creator_id?: string
+          fan_id?: string
           id?: string
-          method?: string
-          paid_at?: string | null
-          pix_qr_payload?: string | null
-          status?: string
-          subscription_id?: string | null
-          user_id?: string
+          plan?: string
+          syncpay_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "payments_subscription_id_fkey"
-            columns: ["subscription_id"]
-            isOneToOne: false
-            referencedRelation: "subscriptions"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
       }
       post_comments: {
         Row: {
-          body: string
+          author_id: string
           created_at: string
           id: string
           post_id: string
-          user_id: string
+          text: string
         }
         Insert: {
-          body: string
+          author_id: string
           created_at?: string
           id?: string
           post_id: string
-          user_id: string
+          text: string
         }
         Update: {
-          body?: string
+          author_id?: string
           created_at?: string
           id?: string
           post_id?: string
-          user_id?: string
+          text?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
@@ -223,19 +360,63 @@ export type Database = {
           },
         ]
       }
+      posts: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          likes_count: number
+          media_type: string | null
+          media_url: string | null
+          min_plan: string
+          text: string | null
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          likes_count?: number
+          media_type?: string | null
+          media_url?: string | null
+          min_plan?: string
+          text?: string | null
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          likes_count?: number
+          media_type?: string | null
+          media_url?: string | null
+          min_plan?: string
+          text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string
+          id: string
           post_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          id?: string
           post_id: string
           user_id: string
         }
         Update: {
           created_at?: string
+          id?: string
           post_id?: string
           user_id?: string
         }
@@ -247,43 +428,9 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      posts: {
-        Row: {
-          body: string
-          created_at: string
-          creator_id: string
-          id: string
-          media_urls: string[]
-          min_tier_sort_order: number
-          published_at: string
-          title: string
-        }
-        Insert: {
-          body?: string
-          created_at?: string
-          creator_id: string
-          id?: string
-          media_urls?: string[]
-          min_tier_sort_order?: number
-          published_at?: string
-          title: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          creator_id?: string
-          id?: string
-          media_urls?: string[]
-          min_tier_sort_order?: number
-          published_at?: string
-          title?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "posts_creator_profile_fkey"
-            columns: ["creator_id"]
+            foreignKeyName: "post_likes_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -292,139 +439,130 @@ export type Database = {
       }
       profiles: {
         Row: {
+          approved: boolean
           avatar_url: string | null
           bio: string | null
+          category: string | null
           cover_url: string | null
           created_at: string
-          display_name: string
-          handle: string
+          handle: string | null
           id: string
-          is_creator: boolean
-          referred_by: string | null
-          updated_at: string
+          name: string
+          role: string
+          social_links: Json | null
         }
         Insert: {
+          approved?: boolean
           avatar_url?: string | null
           bio?: string | null
+          category?: string | null
           cover_url?: string | null
           created_at?: string
-          display_name: string
-          handle: string
+          handle?: string | null
           id: string
-          is_creator?: boolean
-          referred_by?: string | null
-          updated_at?: string
+          name: string
+          role?: string
+          social_links?: Json | null
         }
         Update: {
+          approved?: boolean
           avatar_url?: string | null
           bio?: string | null
+          category?: string | null
           cover_url?: string | null
           created_at?: string
-          display_name?: string
-          handle?: string
+          handle?: string | null
           id?: string
-          is_creator?: boolean
-          referred_by?: string | null
-          updated_at?: string
+          name?: string
+          role?: string
+          social_links?: Json | null
         }
         Relationships: []
       }
       subscriptions: {
         Row: {
+          active: boolean
           created_at: string
           creator_id: string
-          current_period_end: string | null
+          expires_at: string | null
           fan_id: string
           id: string
-          started_at: string | null
-          status: string
-          tier_id: string
+          plan: string
+          syncpay_id: string | null
         }
         Insert: {
+          active?: boolean
           created_at?: string
           creator_id: string
-          current_period_end?: string | null
+          expires_at?: string | null
           fan_id: string
           id?: string
-          started_at?: string | null
-          status?: string
-          tier_id: string
+          plan: string
+          syncpay_id?: string | null
         }
         Update: {
+          active?: boolean
           created_at?: string
           creator_id?: string
-          current_period_end?: string | null
+          expires_at?: string | null
           fan_id?: string
           id?: string
-          started_at?: string | null
-          status?: string
-          tier_id?: string
+          plan?: string
+          syncpay_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "subs_creator_profile_fkey"
+            foreignKeyName: "subscriptions_creator_id_fkey"
             columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "subs_fan_profile_fkey"
+            foreignKeyName: "subscriptions_fan_id_fkey"
             columns: ["fan_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "subscriptions_tier_id_fkey"
-            columns: ["tier_id"]
-            isOneToOne: false
-            referencedRelation: "tiers"
-            referencedColumns: ["id"]
-          },
         ]
       }
-      tiers: {
+      tips: {
         Row: {
-          benefits: string[]
+          amount: number
           created_at: string
           creator_id: string
-          description: string | null
+          fan_id: string
           id: string
-          is_active: boolean
-          name: string
-          price_brl_cents: number
-          slug: string
-          sort_order: number
+          syncpay_id: string | null
         }
         Insert: {
-          benefits?: string[]
+          amount: number
           created_at?: string
           creator_id: string
-          description?: string | null
+          fan_id: string
           id?: string
-          is_active?: boolean
-          name: string
-          price_brl_cents: number
-          slug: string
-          sort_order?: number
+          syncpay_id?: string | null
         }
         Update: {
-          benefits?: string[]
+          amount?: number
           created_at?: string
           creator_id?: string
-          description?: string | null
+          fan_id?: string
           id?: string
-          is_active?: boolean
-          name?: string
-          price_brl_cents?: number
-          slug?: string
-          sort_order?: number
+          syncpay_id?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "tiers_creator_profile_fkey"
+            foreignKeyName: "tips_creator_id_fkey"
             columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tips_fan_id_fkey"
+            columns: ["fan_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -433,19 +571,16 @@ export type Database = {
       }
       user_roles: {
         Row: {
-          created_at: string
           id: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Insert: {
-          created_at?: string
           id?: string
           role: Database["public"]["Enums"]["app_role"]
           user_id: string
         }
         Update: {
-          created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
@@ -457,6 +592,51 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_ban_user: { Args: { p_user_id: string }; Returns: undefined }
+      admin_delete_post: { Args: { p_post_id: string }; Returns: undefined }
+      get_admin_creator_stats: {
+        Args: never
+        Returns: {
+          active_subs: number
+          creator_category: string
+          creator_handle: string
+          creator_id: string
+          creator_name: string
+          estimated_revenue: number
+          post_count: number
+        }[]
+      }
+      get_creator_monthly_revenue: {
+        Args: { p_creator_id: string }
+        Returns: {
+          month: string
+          value: number
+        }[]
+      }
+      get_feed_posts: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          text: string | null
+          media_url: string | null
+          media_type: string | null
+          likes_count: number
+          min_plan: string
+          created_at: string
+          creator_id: string
+          creator: Json
+        }[]
+      }
+      get_platform_stats: {
+        Args: never
+        Returns: {
+          estimated_revenue: number
+          total_active_subs: number
+          total_creators: number
+          total_fans: number
+          total_posts: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -464,13 +644,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      user_has_min_tier: {
-        Args: { _creator_id: string; _min_sort_order: number; _user_id: string }
-        Returns: boolean
-      }
     }
     Enums: {
-      app_role: "admin" | "creator" | "user"
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -598,7 +774,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "creator", "user"],
+      app_role: ["admin", "moderator", "user"],
     },
   },
 } as const

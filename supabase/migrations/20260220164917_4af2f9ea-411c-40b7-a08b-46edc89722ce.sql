@@ -1,0 +1,1 @@
+ALTER TABLE public.pending_payments ADD COLUMN affiliate_ref text;
