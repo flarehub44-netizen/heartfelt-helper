@@ -22,7 +22,7 @@ import { useAffiliateLinks } from "@/hooks/useAffiliateLinks";
 import { useMyAffiliateRequest, useCreateAffiliateRequest } from "@/hooks/useAffiliateRequests";
 import { useCreatorPixel } from "@/hooks/useCreatorPixel";
 import { getLoginPath } from "@/lib/authRedirect";
-import { normalizePlanName, PLAN_LABELS, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
+import { normalizePlanName, PLAN_LABELS, PLAN_BADGES, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
 import { trackConversion } from "@/lib/conversionEvents";
 import { useMeta } from "@/hooks/useMeta";
 import { useCreatorLives, useManageLives, getEmbedUrl } from "@/hooks/useCreatorLives";
@@ -214,12 +214,7 @@ const CreatorProfile = () => {
     onError: () => toast.error("Erro ao excluir post"),
   });
 
-  const POST_PLAN_LABELS: Record<string, { label: string; emoji: string }> = {
-    free: { label: "Todos", emoji: "🌐" },
-    fan: { label: "Fã", emoji: "💖" },
-    superfan: { label: "Super Fã", emoji: "🔥" },
-    vip: { label: "VIP", emoji: "💎" },
-  };
+  const POST_PLAN_LABELS = PLAN_BADGES;
 
   const openEdit = (post: MyPost) => {
     setEditPost(post);

@@ -14,6 +14,13 @@ export const PLAN_LABELS: Record<string, string> = {
   vip: "VIP",
 };
 
+export const PLAN_BADGES: Record<string, { label: string; emoji: string }> = {
+  free: { label: "Todos", emoji: "🌐" },
+  fan: { label: "Fã", emoji: "💖" },
+  superfan: { label: "Super Fã", emoji: "🔥" },
+  vip: { label: "VIP", emoji: "💎" },
+};
+
 export function planRank(plan: string | null | undefined): number {
   if (!plan) return 0;
   return PLAN_RANK[plan.toLowerCase()] ?? 0;
