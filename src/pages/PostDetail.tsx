@@ -127,7 +127,7 @@ const PostDetailPage = () => {
         <article className="glass-card rounded-2xl overflow-hidden">
           <Link to={creatorUrl} className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors">
             {post.creator?.avatar_url ? (
-              <img src={post.creator.avatar_url} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover" />
+              <img src={post.creator.avatar_url} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover"  loading="lazy" decoding="async" />
             ) : (
               <div className="h-10 w-10 rounded-full bg-muted" />
             )}

@@ -51,7 +51,7 @@ const CreatorCard = ({ creator }: CreatorCardProps) => {
           src={coverUrl(creator.cover_url ?? creator.cover)}
           alt={creator.name}
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+         loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/20 to-transparent" />
 
         {/* Category badge */}
@@ -68,7 +68,7 @@ const CreatorCard = ({ creator }: CreatorCardProps) => {
       {/* Avatar */}
       <div className="relative px-4">
         <div className="absolute -top-7 left-4 h-14 w-14 rounded-full border-2 border-primary/60 overflow-hidden bg-muted ring-2 ring-background shadow-glow">
-          <img src={avatarUrl(creator.avatar_url ?? creator.avatar, 56)} alt={creator.name} className="h-full w-full object-cover" />
+          <img src={avatarUrl(creator.avatar_url ?? creator.avatar, 56)} alt={creator.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
         </div>
         {creator.verified && (
           <div className="absolute -top-2 left-14 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-primary">

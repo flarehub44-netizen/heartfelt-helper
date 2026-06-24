@@ -120,7 +120,7 @@ const Onboarding = () => {
               onClick={() => coverRef.current?.click()}
             >
               {coverPreview ? (
-                <img src={coverPreview} alt="Capa" className="h-full w-full object-cover" />
+                <img src={coverPreview} alt="Capa" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
               ) : (
                 <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
                   <Camera className="h-8 w-8" />
@@ -141,7 +141,7 @@ const Onboarding = () => {
               onClick={() => avatarRef.current?.click()}
             >
               {avatarPreview ? (
-                <img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover" />
+                <img src={avatarPreview} alt="Avatar" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
               ) : (
                 <div className="h-full w-full flex items-center justify-center text-muted-foreground">
                   <Camera className="h-6 w-6" />

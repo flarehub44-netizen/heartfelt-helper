@@ -105,7 +105,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
               <CommandItem key={c.id} onSelect={() => go(`/creator/${c.id}`)} className="cursor-pointer">
                 <div className="flex items-center gap-3">
                   {c.avatar_url ? (
-                    <img src={c.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    <img src={c.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover"  loading="lazy" decoding="async" />
                   ) : (
                     <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                       <User className="h-4 w-4 text-muted-foreground" />

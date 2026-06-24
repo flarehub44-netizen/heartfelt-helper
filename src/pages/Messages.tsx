@@ -100,7 +100,7 @@ const Messages = () => {
                   )}
                 >
                   <div className="relative flex-shrink-0">
-                    <img src={conv.contactAvatar ?? ""} alt={conv.contactName} className="h-11 w-11 rounded-full object-cover" />
+                    <img src={conv.contactAvatar ?? ""} alt={conv.contactName} className="h-11 w-11 rounded-full object-cover"  loading="lazy" decoding="async" />
                     <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -135,7 +135,7 @@ const Messages = () => {
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                     <div className="relative">
-                      <img src={selected.contactAvatar ?? ""} alt={selected.contactName} className="h-10 w-10 rounded-full object-cover" />
+                      <img src={selected.contactAvatar ?? ""} alt={selected.contactName} className="h-10 w-10 rounded-full object-cover"  loading="lazy" decoding="async" />
                       <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
                     </div>
                     <div>
@@ -166,7 +166,7 @@ const Messages = () => {
                         className={cn("flex", isMe ? "justify-end" : "justify-start")}
                       >
                         {!isMe && (
-                          <img src={selected.contactAvatar ?? ""} alt="" className="h-7 w-7 rounded-full object-cover mr-2 self-end flex-shrink-0" />
+                          <img src={selected.contactAvatar ?? ""} alt="" className="h-7 w-7 rounded-full object-cover mr-2 self-end flex-shrink-0"  loading="lazy" decoding="async" />
                         )}
                         <div className={cn(
                           "max-w-[70%] rounded-2xl px-4 py-2.5 text-sm",

@@ -69,7 +69,7 @@ const Index = () => {
       <section className="relative flex min-h-screen items-center justify-center overflow-hidden pt-16">
         {/* Background image */}
         <div className="absolute inset-0">
-          <img src={heroBg} alt="" className="h-full w-full object-cover opacity-40" />
+          <img src={heroBg} alt="" className="h-full w-full object-cover opacity-40"  loading="lazy" decoding="async" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
         </div>
 

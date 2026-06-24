@@ -348,7 +348,7 @@ const Dashboard = () => {
                   <p className="text-xs text-muted-foreground">Nenhum assinante recente.</p>
                 ) : recentSubscribers.map((sub, i) => (
                   <div key={i} className="flex items-center gap-2.5">
-                    <img src={sub.avatar || "/placeholder.svg"} alt={sub.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0" />
+                    <img src={sub.avatar || "/placeholder.svg"} alt={sub.name} className="h-8 w-8 rounded-full object-cover flex-shrink-0"  loading="lazy" decoding="async" />
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-medium text-foreground truncate">{sub.name}</p>
                       <p className="text-[10px] text-muted-foreground">{sub.since}</p>
@@ -598,7 +598,7 @@ const Dashboard = () => {
               previewFile.type.startsWith("video") ? (
                 <video src={previewUrl} controls className="w-full max-h-64 rounded-xl object-contain bg-black" />
               ) : (
-                <img src={previewUrl} alt="Preview" className="w-full max-h-64 rounded-xl object-contain bg-muted/20" />
+                <img src={previewUrl} alt="Preview" className="w-full max-h-64 rounded-xl object-contain bg-muted/20"  loading="lazy" decoding="async" />
               )
             )}
             <div className="flex flex-col gap-1 rounded-xl border border-border/50 bg-muted/10 p-4">
