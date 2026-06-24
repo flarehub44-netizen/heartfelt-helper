@@ -442,8 +442,8 @@ const Feed = () => {
 
               {post.image ? (
                 <div className="relative">
-                  <img
-                    src={post.locked ? post.image : thumbUrl(post.image)}
+                  <SignedImage
+                    src={post.image}
                     alt="Post"
                     className={`w-full aspect-[4/3] object-cover ${post.locked ? "blur-xl scale-105" : ""}`}
                   />

@@ -28,6 +28,7 @@ import { useMeta } from "@/hooks/useMeta";
 import { useCreatorLives, useManageLives, getEmbedUrl } from "@/hooks/useCreatorLives";
 import { ScheduleLiveModal } from "@/components/ScheduleLiveModal";
 import { LiveChat } from "@/components/LiveChat";
+import { SignedImage } from "@/components/SignedMedia";
 import { useSimilarCreators } from "@/hooks/useSimilarCreators";
 
 
@@ -1061,7 +1062,7 @@ const CreatorProfile = () => {
                   return (
                     <div key={post.id} className="group relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/40">
                       {post.media_url ? (
-                        <img
+                        <SignedImage
                           src={post.media_url}
                           alt=""
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
