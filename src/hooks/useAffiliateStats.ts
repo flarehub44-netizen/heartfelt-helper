@@ -7,7 +7,7 @@ export function useAffiliateFeeRate() {
     queryKey: ["affiliateFeeRate"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("platform_settings" as any)
+        .from("platform_settings")
         .select("value")
         .eq("key", AFFILIATE_FEE_KEY)
         .single();
@@ -22,7 +22,7 @@ export function useUpdateAffiliateFee() {
   return useMutation({
     mutationFn: async (rate: number) => {
       const { error } = await supabase
-        .from("platform_settings" as any)
+        .from("platform_settings")
         .update({ value: rate.toString(), updated_at: new Date().toISOString() })
         .eq("key", AFFILIATE_FEE_KEY);
       if (error) throw error;
@@ -37,7 +37,7 @@ export function useAffiliateOverview() {
     queryFn: async () => {
       // Get all affiliate links with profiles
       const { data: links, error: linksErr } = await supabase
-        .from("affiliate_links" as any)
+        .from("affiliate_links")
         .select("id, affiliate_id, creator_id, code, created_at");
       if (linksErr) throw linksErr;
 
@@ -48,7 +48,7 @@ export function useAffiliateOverview() {
 
       // Get referrals
       const { data: referrals } = await supabase
-        .from("affiliate_referrals" as any)
+        .from("affiliate_referrals")
         .select("id, affiliate_link_id, commission_rate, commission_amount, status, created_at, subscription_id")
         .in("affiliate_link_id", linkIds)
         .order("created_at", { ascending: false });

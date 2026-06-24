@@ -38,7 +38,7 @@ const Subscriptions = () => {
 
   const cancelSub = useMutation({
     mutationFn: async (subId: string) => {
-      const { error } = await supabase.rpc("cancel_subscription" as any, { p_sub_id: subId });
+      const { error } = await supabase.rpc("cancel_subscription", { p_sub_id: subId });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -55,7 +55,7 @@ const Subscriptions = () => {
     subs.forEach((sub) => {
       const days = daysUntil(sub.expires_at);
       if (days !== null && days <= 3 && days > 0) {
-        void supabase.rpc("send_renewal_reminder" as any, { p_sub_id: sub.id });
+        void supabase.rpc("send_renewal_reminder", { p_sub_id: sub.id });
       }
     });
   }, [subs.length]);

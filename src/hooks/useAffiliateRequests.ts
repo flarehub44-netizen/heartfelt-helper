@@ -9,7 +9,7 @@ export function useMyAffiliateRequest() {
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("affiliate_requests" as any)
+        .from("affiliate_requests")
         .select("*")
         .eq("user_id", user!.id)
         .maybeSingle();
@@ -25,7 +25,7 @@ export function useCreateAffiliateRequest() {
   return useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase
-        .from("affiliate_requests" as any)
+        .from("affiliate_requests")
         .insert({ user_id: user!.id })
         .select()
         .single();
@@ -42,7 +42,7 @@ export function useAdminAffiliateRequests() {
     queryKey: ["adminAffiliateRequests"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("affiliate_requests" as any)
+        .from("affiliate_requests")
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -74,7 +74,7 @@ export function useUpdateAffiliateRequest() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: "approved" | "rejected" }) => {
       const { error } = await supabase
-        .from("affiliate_requests" as any)
+        .from("affiliate_requests")
         .update({ status, reviewed_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;

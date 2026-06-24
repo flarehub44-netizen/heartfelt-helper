@@ -25,7 +25,7 @@ export function useBookmarkedPosts() {
     enabled: !!user,
     queryFn: async (): Promise<BookmarkedPost[]> => {
       const { data, error } = await supabase
-        .from("post_bookmarks" as any)
+        .from("post_bookmarks")
         .select(`
           post_id,
           created_at,
@@ -53,7 +53,7 @@ export function useBookmarks() {
     enabled: !!user,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("post_bookmarks" as any)
+        .from("post_bookmarks")
         .select("post_id")
         .eq("user_id", user!.id);
       if (error) throw error;
@@ -74,13 +74,13 @@ export function useToggleBookmark() {
       if (!user) return;
       if (isBookmarked) {
         await supabase
-          .from("post_bookmarks" as any)
+          .from("post_bookmarks")
           .delete()
           .eq("user_id", user.id)
           .eq("post_id", postId);
       } else {
         await supabase
-          .from("post_bookmarks" as any)
+          .from("post_bookmarks")
           .insert({ user_id: user.id, post_id: postId });
       }
     },
