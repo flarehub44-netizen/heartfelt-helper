@@ -313,6 +313,30 @@ export type Database = {
           },
         ]
       }
+      fan_streaks: {
+        Row: {
+          current_streak: number
+          last_check_in: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_check_in?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_check_in?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -1156,6 +1180,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      daily_check_in: { Args: never; Returns: Json }
       get_admin_creator_stats: {
         Args: never
         Returns: {
