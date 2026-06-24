@@ -62,6 +62,29 @@ Deno.serve(async (req) => {
     const fanId = claimsData.claims.sub;
     const fanEmail = claimsData.claims.email as string;
 
+    // Service-role client (used for rate limit + pending insert)
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Ad-hoc rate limit: max 10 PIX charges per user per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { count: recentCount } = await supabaseAdmin
+      .from("pix_rate_limit")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", fanId)
+      .gt("created_at", oneHourAgo);
+
+    if ((recentCount ?? 0) >= 10) {
+      return new Response(
+        JSON.stringify({ error: "Muitas tentativas. Aguarde alguns minutos antes de gerar outro PIX." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    await supabaseAdmin.from("pix_rate_limit").insert({ user_id: fanId });
+
     const body = await req.json();
     const { creator_id, plan_name, amount, fan_name, fan_cpf, creator_name, affiliate_ref } =
       body;
@@ -75,6 +98,7 @@ Deno.serve(async (req) => {
         }
       );
     }
+
 
     // Get SyncPay bearer token
     const syncpayToken = await getSyncPayToken();
@@ -108,11 +132,7 @@ Deno.serve(async (req) => {
       client: { ...cashInPayload.client, cpf: cpfClean.slice(0, 3) + "***" }
     }));
 
-    // Use service role to save pending payment (bypasses RLS)
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+
 
     const cashInRes = await fetch(`${SYNCPAY_BASE}/api/partner/v1/cash-in`, {
       method: "POST",

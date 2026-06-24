@@ -80,9 +80,12 @@ const AgeGateModal = ({ open, onConfirm, onDeny }: AgeGateModalProps) => {
 
           {/* Legal disclaimer */}
           <p className="mt-6 text-center text-xs text-muted-foreground/70 leading-relaxed">
-            Ao acessar este site, você confirma que tem idade legal para visualizar
-            conteúdo adulto em sua jurisdição. O acesso não autorizado é proibido.
+            Ao confirmar, você declara ter idade legal para visualizar conteúdo adulto e aceita os{" "}
+            <a href="/terms" className="underline hover:text-foreground">Termos de Uso</a>
+            {" "}e a{" "}
+            <a href="/privacy" className="underline hover:text-foreground">Política de Privacidade</a>.
           </p>
+
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
