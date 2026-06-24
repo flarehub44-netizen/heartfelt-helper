@@ -231,6 +231,8 @@ const Feed = () => {
   }, [realPosts, prefCategories]);
   const { user, profile } = useAuth();
   const mySubscriptionMap = useMySubscriptionMap();
+  const myFollows = useMyFollows();
+  const [feedTab, setFeedTab] = useState<"following" | "discover">("following");
   const [localLikes, setLocalLikes] = useState<Set<string>>(new Set());
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -241,10 +243,26 @@ const Feed = () => {
   const stories = realCreators?.slice(0, 6) ?? [];
   const suggestions = realCreators?.slice(0, 5) ?? [];
 
-  const creatorIds = [...new Set(sortedPosts.map((p) => p.creator_id))];
+  // Tab filtering: "Seguindo" = creators the user follows OR subscribes to.
+  const followingIds = useMemo(() => {
+    const ids = new Set<string>(myFollows);
+    mySubscriptionMap.forEach((_, k) => ids.add(k));
+    return ids;
+  }, [myFollows, mySubscriptionMap]);
+
+  const visiblePosts = useMemo(() => {
+    if (!user) return sortedPosts;
+    if (feedTab === "following") {
+      return sortedPosts.filter((p) => followingIds.has(p.creator_id));
+    }
+    // Discover = everything you DON'T already follow/sub to
+    return sortedPosts.filter((p) => !followingIds.has(p.creator_id));
+  }, [sortedPosts, feedTab, followingIds, user]);
+
+  const creatorIds = [...new Set(visiblePosts.map((p) => p.creator_id))];
   const { data: plansByCreator = {} } = useCreatorPlansByCreator(creatorIds);
 
-  const feedPosts = sortedPosts.map((p) => ({
+  const feedPosts = visiblePosts.map((p) => ({
     id: p.id,
     min_plan: p.min_plan,
     creator: {
