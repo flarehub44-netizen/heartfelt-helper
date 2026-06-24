@@ -107,6 +107,80 @@ export type Database = {
         }
         Relationships: []
       }
+      coin_packages: {
+        Row: {
+          active: boolean
+          bonus: number
+          coins: number
+          created_at: string
+          id: string
+          label: string | null
+          price_brl: number
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          bonus?: number
+          coins: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          price_brl: number
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          bonus?: number
+          coins?: number
+          created_at?: string
+          id?: string
+          label?: string | null
+          price_brl?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      coin_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          ref_id: string | null
+          ref_type: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          ref_id?: string | null
+          ref_type?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          ref_id?: string | null
+          ref_type?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coin_transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversion_events: {
         Row: {
           created_at: string
@@ -275,6 +349,33 @@ export type Database = {
           },
         ]
       }
+      gifts: {
+        Row: {
+          active: boolean
+          cost: number
+          emoji: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          cost: number
+          emoji: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          cost?: number
+          emoji?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       live_chat_messages: {
         Row: {
           created_at: string | null
@@ -315,6 +416,72 @@ export type Database = {
           {
             foreignKeyName: "live_chat_messages_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_gifts: {
+        Row: {
+          cost: number
+          created_at: string
+          creator_id: string
+          gift_id: string
+          id: string
+          live_id: string
+          sender_id: string
+        }
+        Insert: {
+          cost: number
+          created_at?: string
+          creator_id: string
+          gift_id: string
+          id?: string
+          live_id: string
+          sender_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          creator_id?: string
+          gift_id?: string
+          id?: string
+          live_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_gifts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_gifts_gift_id_fkey"
+            columns: ["gift_id"]
+            isOneToOne: false
+            referencedRelation: "gifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_gifts_live_id_fkey"
+            columns: ["live_id"]
+            isOneToOne: false
+            referencedRelation: "creator_lives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_gifts_live_id_fkey"
+            columns: ["live_id"]
+            isOneToOne: false
+            referencedRelation: "creator_lives_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_gifts_sender_id_fkey"
+            columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -621,6 +788,45 @@ export type Database = {
           },
         ]
       }
+      post_unlocks: {
+        Row: {
+          coins_paid: number
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          coins_paid: number
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          coins_paid?: number
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_unlocks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_unlocks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_views: {
         Row: {
           created_at: string | null
@@ -666,6 +872,7 @@ export type Database = {
           media_type: string | null
           media_url: string | null
           min_plan: string
+          ppv_price: number | null
           text: string | null
           views_count: number
         }
@@ -677,6 +884,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           min_plan?: string
+          ppv_price?: number | null
           text?: string | null
           views_count?: number
         }
@@ -688,6 +896,7 @@ export type Database = {
           media_type?: string | null
           media_url?: string | null
           min_plan?: string
+          ppv_price?: number | null
           text?: string | null
           views_count?: number
         }
@@ -851,6 +1060,35 @@ export type Database = {
         }
         Relationships: []
       }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       creator_lives_public: {
@@ -907,6 +1145,16 @@ export type Database = {
         Returns: boolean
       }
       cancel_subscription: { Args: { p_sub_id: string }; Returns: undefined }
+      credit_coins: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_ref_id: string
+          p_ref_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       get_admin_creator_stats: {
         Args: never
         Returns: {
@@ -1017,8 +1265,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      send_live_gift: {
+        Args: { p_gift_id: string; p_live_id: string }
+        Returns: undefined
+      }
       send_renewal_reminder: { Args: { p_sub_id: string }; Returns: undefined }
+      tip_with_coins: {
+        Args: { p_amount: number; p_creator_id: string; p_message?: string }
+        Returns: undefined
+      }
       track_post_view: { Args: { p_post_id: string }; Returns: undefined }
+      unlock_post_with_coins: {
+        Args: { p_post_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

@@ -2,12 +2,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import {
   Menu, X, Flame, Search, User, LayoutDashboard, MessageCircle, Rss,
-  LogOut, UserCircle2, Settings, Compass, CreditCard,
+  LogOut, UserCircle2, Settings, Compass, CreditCard, Coins,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
 import SearchDialog from "@/components/SearchDialog";
 import NotificationBell from "@/components/NotificationBell";
+import CoinBadge from "@/components/CoinBadge";
 import { avatarUrl } from "@/lib/imageTransform";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -146,6 +147,7 @@ const Navbar = () => {
             <Search className="h-4 w-4" />
           </button>
 
+          {loggedIn && <CoinBadge />}
           {loggedIn && <NotificationBell />}
 
           {loggedIn ? (
@@ -181,6 +183,14 @@ const Navbar = () => {
                       Assinaturas
                     </Link>
                   )}
+                  <Link
+                    to="/wallet"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <Coins className="h-4 w-4 text-muted-foreground" />
+                    Carteira
+                  </Link>
                   {isCreator && (
                     <Link
                       to="/settings"
