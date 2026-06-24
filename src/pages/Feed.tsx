@@ -384,9 +384,79 @@ const Feed = () => {
                   Descobrir criadores
                 </Link>
               </div>
+          {/* Tabs: Seguindo / Descobrir */}
+          {user && (
+            <div className="flex items-center gap-1 border-b border-border/50">
+              {([
+                { key: "following", label: "Seguindo", count: followingIds.size },
+                { key: "discover", label: "Descobrir" },
+              ] as const).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setFeedTab(t.key)}
+                  className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
+                    feedTab === t.key
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                  {feedTab === t.key && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-primary rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Posts */}
+          {postsLoading ? (
+            Array.from({ length: 3 }).map((_, i) => <PostSkeleton key={i} />)
+          ) : feedPosts.length === 0 ? (
+            <div className="flex flex-col gap-5">
+              <div className="glass-card rounded-2xl p-8 text-center">
+                <Compass className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
+                {feedTab === "following" && user ? (
+                  <>
+                    <p className="font-semibold text-foreground mb-1">
+                      {followingIds.size === 0
+                        ? "Você ainda não segue ninguém"
+                        : "Sem novidades por enquanto"}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {followingIds.size === 0
+                        ? "Siga ou assine criadores para ver o conteúdo deles aqui."
+                        : "Quem você segue ainda não publicou. Que tal descobrir algo novo?"}
+                    </p>
+                    <button
+                      onClick={() => setFeedTab("discover")}
+                      className="inline-flex rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
+                    >
+                      Ver aba Descobrir
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-foreground mb-1">Seu feed está vazio</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Assine ou siga criadores para ver o conteúdo deles aqui.
+                    </p>
+                    <Link
+                      to="/discover"
+                      className="inline-flex rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
+                    >
+                      Descobrir criadores
+                    </Link>
+                  </>
+                )}
+              </div>
               {(realCreators ?? []).length > 0 && (
                 <div className="glass-card rounded-2xl p-5">
-                  <p className="text-sm font-semibold text-foreground mb-4">Criadores em destaque</p>
+                  <p className="text-sm font-semibold text-foreground mb-4">
+                    {feedTab === "following" && user
+                      ? "Comece seguindo alguém"
+                      : "Criadores em destaque"}
+                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {(realCreators ?? []).slice(0, 6).map((creator) => (
                       <Link
@@ -413,6 +483,7 @@ const Feed = () => {
             <div key={post.id} className="glass-card rounded-2xl overflow-hidden">
               {!post.locked && <PostViewTracker postId={post.id} />}
               <div className="flex items-center justify-between p-4">
+
                 <Link to={`/creator/${post.creator.id}`} className="flex items-center gap-3">
                   <img src={post.creator.avatar} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/30" />
                   <div>
