@@ -306,6 +306,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "live_chat_messages_live_id_fkey"
+            columns: ["live_id"]
+            isOneToOne: false
+            referencedRelation: "creator_lives_public"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "live_chat_messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -846,7 +853,50 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      creator_lives_public: {
+        Row: {
+          created_at: string | null
+          creator_id: string | null
+          description: string | null
+          id: string | null
+          min_plan: string | null
+          scheduled_at: string | null
+          status: string | null
+          thumbnail_url: string | null
+          title: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          creator_id?: string | null
+          description?: string | null
+          id?: string | null
+          min_plan?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          creator_id?: string | null
+          description?: string | null
+          id?: string | null
+          min_plan?: string | null
+          scheduled_at?: string | null
+          status?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_lives_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_ban_user: { Args: { p_user_id: string }; Returns: undefined }
