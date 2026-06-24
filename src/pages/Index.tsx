@@ -128,14 +128,25 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Featured Creators */}
+      {/* Featured Creators — Top da semana com ranking + prova social viva */}
       {featured.length > 0 && <section className="py-24 container">
         <div className="flex items-end justify-between mb-12">
           <div>
-            <p className="text-sm font-medium text-primary mb-2">Em destaque</p>
+            <p className="text-sm font-medium text-primary mb-2 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              Top da semana — atualizado agora
+            </p>
             <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground">
-              Criadores populares
+              Criadores em alta
             </h2>
+            {platformStats && platformStats.total_fans > 0 && (
+              <p className="text-sm text-muted-foreground mt-2">
+                <span className="font-semibold text-foreground">{platformStats.total_active_subs.toLocaleString("pt-BR")}</span> fãs já assinam criadores na plataforma
+              </p>
+            )}
           </div>
           <Link
             to="/discover"
@@ -150,8 +161,15 @@ const Index = () => {
             <div
               key={creator.id}
               style={{ animationDelay: `${i * 0.1}s` }}
-              className="animate-fade-up opacity-0 [animation-fill-mode:forwards]"
+              className="relative animate-fade-up opacity-0 [animation-fill-mode:forwards]"
             >
+              {i < 3 && (
+                <div className="absolute -top-2 -left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-gradient-primary shadow-glow ring-2 ring-background">
+                  <span className="font-display text-sm font-extrabold text-primary-foreground">
+                    {i + 1}º
+                  </span>
+                </div>
+              )}
               <CreatorCard creator={creator} />
             </div>
           ))}
@@ -166,6 +184,7 @@ const Index = () => {
           </Link>
         </div>
       </section>}
+
 
       {/* How it works */}
       <section className="py-24 relative overflow-hidden">

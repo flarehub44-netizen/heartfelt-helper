@@ -1181,6 +1181,39 @@ const CreatorProfile = () => {
         </div>
       )}
 
+      {/* Sticky mobile CTA — biggest conversion lever on /u/:handle */}
+      {!isOwner && plans.length > 0 && (
+        <>
+          <div className="md:hidden h-20" aria-hidden />
+          <div className="md:hidden fixed bottom-16 left-0 right-0 z-40 border-t border-border/50 bg-background/95 backdrop-blur-xl px-4 py-3 flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide leading-none mb-0.5">
+                {isSubscribed && effectiveUpgradeIndex < 0 ? "Plano atual" : "A partir de"}
+              </p>
+              <p className="font-display text-base font-bold text-primary truncate leading-tight">
+                {isSubscribed && effectiveUpgradeIndex < 0
+                  ? `${PLAN_LABELS[subscription?.plan ?? "fan"] ?? "Assinante"} ✓`
+                  : `R$ ${(isSubscribed && effectiveUpgradeIndex >= 0
+                      ? getCheckoutAmount(effectiveUpgradeIndex)
+                      : plans[0].price
+                    ).toFixed(2).replace(".", ",")}${isSubscribed && effectiveUpgradeIndex >= 0 ? "" : "/mês"}`}
+              </p>
+            </div>
+            <button
+              onClick={handleSubscribe}
+              disabled={isSubscribed && effectiveUpgradeIndex < 0}
+              className="flex-shrink-0 rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow active:scale-95 transition-transform disabled:opacity-60"
+            >
+              {isSubscribed && effectiveUpgradeIndex < 0
+                ? "Assinante"
+                : isSubscribed
+                  ? "Fazer upgrade"
+                  : "Assinar agora"}
+            </button>
+          </div>
+        </>
+      )}
+
       {isOwner && (
         <ScheduleLiveModal
           open={scheduleLiveOpen}
