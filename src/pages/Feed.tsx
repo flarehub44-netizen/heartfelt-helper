@@ -446,6 +446,7 @@ const Feed = () => {
                   <SignedImage
                     src={post.image}
                     alt="Post"
+                    transform={{ width: 800, quality: 75, resize: "cover" }}
                     className={`w-full aspect-[4/3] object-cover ${post.locked ? "blur-xl scale-105" : ""}`}
                   />
                   {post.locked && (() => {

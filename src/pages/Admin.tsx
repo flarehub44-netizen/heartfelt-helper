@@ -520,6 +520,7 @@ function PostsTab() {
                           <SignedImage
                             src={post.media_url}
                             alt=""
+                            transform={{ width: 80, quality: 70, resize: "cover" }}
                             className="h-10 w-10 rounded object-cover"
                           />
                         )

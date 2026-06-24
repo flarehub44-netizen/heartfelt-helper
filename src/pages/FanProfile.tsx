@@ -415,6 +415,7 @@ const FanProfile = () => {
                         <SignedImage
                           src={post.media_url}
                           alt=""
+                          transform={{ width: 400, quality: 70, resize: "cover" }}
                           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                       ) : post.media_url && post.media_type === "video" ? (
