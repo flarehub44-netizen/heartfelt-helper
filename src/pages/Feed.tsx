@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { avatarUrl, thumbUrl } from "@/lib/imageTransform";
 import { trackPostView } from "@/hooks/usePostStats";
 import { useBookmarks, useToggleBookmark } from "@/hooks/useBookmarks";
+import { SignedImage } from "@/components/SignedMedia";
 
 interface PixModalState {
   creatorId: string;
