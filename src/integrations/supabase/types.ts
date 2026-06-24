@@ -1145,6 +1145,7 @@ export type Database = {
         Returns: boolean
       }
       cancel_subscription: { Args: { p_sub_id: string }; Returns: undefined }
+      claim_welcome_bonus: { Args: never; Returns: number }
       credit_coins: {
         Args: {
           p_amount: number
