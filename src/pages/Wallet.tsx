@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Coins, Loader2, Sparkles, ArrowDownRight, ArrowUpRight, Gift, Heart, Lock } from "lucide-react";
+import { Coins, Loader2, Sparkles, ArrowDownRight, ArrowUpRight, Gift, Heart, Lock, AlertCircle, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/hooks/useWallet";
@@ -12,6 +12,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+
+const LOW_BALANCE_THRESHOLD = 50;
+
 
 type Package = {
   id: string; coins: number; price_brl: number; bonus: number; label: string | null;
