@@ -26,7 +26,7 @@ function ConversationPage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("conversations")
-        .select("id, creator_id, fan_id, creator:profiles!conversations_creator_id_fkey(handle, display_name, avatar_url), fan:profiles!conversations_fan_id_fkey(handle, display_name, avatar_url)")
+        .select("id, creator_id, fan_id, creator:profiles!conv_creator_profile_fkey(handle, display_name, avatar_url), fan:profiles!conv_fan_profile_fkey(handle, display_name, avatar_url)")
         .eq("id", conversationId)
         .maybeSingle();
       return data;

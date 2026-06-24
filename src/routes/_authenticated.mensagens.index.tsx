@@ -17,7 +17,7 @@ function ConversationsPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("conversations")
-        .select("id, creator_id, fan_id, last_message_at, creator:profiles!conversations_creator_id_fkey(handle, display_name, avatar_url), fan:profiles!conversations_fan_id_fkey(handle, display_name, avatar_url)")
+        .select("id, creator_id, fan_id, last_message_at, creator:profiles!conv_creator_profile_fkey(handle, display_name, avatar_url), fan:profiles!conv_fan_profile_fkey(handle, display_name, avatar_url)")
         .or(`creator_id.eq.${user!.id},fan_id.eq.${user!.id}`)
         .order("last_message_at", { ascending: false });
       if (error) console.error(error);
