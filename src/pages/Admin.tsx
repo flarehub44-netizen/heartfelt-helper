@@ -34,8 +34,9 @@ import { useMonthlyRevenue } from "@/hooks/useMonthlyRevenue";
 import { useAffiliateFeeRate, useUpdateAffiliateFee, useAffiliateOverview } from "@/hooks/useAffiliateStats";
 import { useAdminAffiliateRequests, useUpdateAffiliateRequest } from "@/hooks/useAffiliateRequests";
 import { useConversionStats } from "@/hooks/useConversionStats";
+import { usePlatformHealth, useRateLimitLogs } from "@/hooks/usePlatformHealth";
 
-type Section = "overview" | "users" | "creators" | "posts" | "financial" | "affiliates" | "conversion";
+type Section = "overview" | "users" | "creators" | "posts" | "financial" | "affiliates" | "conversion" | "health";
 
 const navItems = [
   { id: "overview" as Section, label: "Visão Geral", icon: LayoutDashboard },
@@ -45,6 +46,7 @@ const navItems = [
   { id: "financial" as Section, label: "Financeiro", icon: DollarSign },
   { id: "affiliates" as Section, label: "Afiliados", icon: Link2 },
   { id: "conversion" as Section, label: "Conversão", icon: TrendingUp },
+  { id: "health" as Section, label: "Saúde", icon: Activity },
 ];
 
 // ── Overview Tab ────────────────────────────────────────────────────────────
