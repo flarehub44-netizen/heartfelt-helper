@@ -8,6 +8,8 @@ import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { SignedImage } from "@/components/SignedMedia";
 import { PLAN_LABELS } from "@/lib/plans";
+import UnlockPostButton from "@/components/UnlockPostButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PostDetail {
   id: string;
@@ -15,6 +17,7 @@ interface PostDetail {
   media_url: string | null;
   media_type: string | null;
   min_plan: string;
+  ppv_price: number | null;
   likes_count: number;
   created_at: string;
   creator_id: string;
@@ -31,20 +34,35 @@ const SITE = typeof window !== "undefined" ? window.location.origin : "";
 
 const PostDetailPage = () => {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
 
-  const { data: post, isLoading } = useQuery({
+  const { data: post, isLoading, refetch } = useQuery({
     queryKey: ["post-detail", id],
     enabled: !!id,
     queryFn: async (): Promise<PostDetail | null> => {
       const { data, error } = await supabase
         .from("posts")
         .select(
-          "id, text, media_url, media_type, min_plan, likes_count, created_at, creator_id, creator:profiles!posts_creator_id_fkey(id, name, handle, avatar_url, category)"
+          "id, text, media_url, media_type, min_plan, ppv_price, likes_count, created_at, creator_id, creator:profiles!posts_creator_id_fkey(id, name, handle, avatar_url, category)"
         )
         .eq("id", id!)
         .maybeSingle();
       if (error) throw error;
       return data as PostDetail | null;
+    },
+  });
+
+  const { data: unlocked = false } = useQuery({
+    queryKey: ["post-unlock", id, user?.id],
+    enabled: !!id && !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("post_unlocks")
+        .select("id")
+        .eq("post_id", id!)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
     },
   });
 
@@ -67,14 +85,19 @@ const PostDetailPage = () => {
     );
   }
 
-  const locked = post.min_plan !== "free";
+  const isOwner = user?.id === post.creator_id;
+  const ppvPrice = post.ppv_price ?? 0;
+  const ppvLock = ppvPrice > 0 && !unlocked && !isOwner;
+  const planLock = post.min_plan !== "free";
+  const locked = (planLock || ppvLock) && !isOwner;
+
   const title = post.creator
     ? `${post.creator.name}${post.text ? ` — ${post.text.slice(0, 60)}` : ""}`
     : "Post";
   const description =
     post.text?.slice(0, 155) ||
     (locked
-      ? `Conteúdo exclusivo para ${PLAN_LABELS[post.min_plan] ?? "assinantes"} de ${post.creator?.name}.`
+      ? `Conteúdo exclusivo de ${post.creator?.name}.`
       : `Confira este post de ${post.creator?.name}.`);
   const url = `${SITE}/p/${post.id}`;
   const creatorUrl = post.creator?.handle ? `/u/${post.creator.handle}` : `/creator/${post.creator_id}`;
@@ -102,7 +125,6 @@ const PostDetailPage = () => {
         </Link>
 
         <article className="glass-card rounded-2xl overflow-hidden">
-          {/* Header */}
           <Link to={creatorUrl} className="flex items-center gap-3 p-4 hover:bg-muted/30 transition-colors">
             {post.creator?.avatar_url ? (
               <img src={post.creator.avatar_url} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover" />
@@ -132,19 +154,32 @@ const PostDetailPage = () => {
                 />
               )}
               {locked && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 backdrop-blur-sm">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/60 backdrop-blur-sm p-6">
                   <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-primary shadow-glow">
                     <Lock className="h-6 w-6 text-primary-foreground" />
                   </div>
-                  <p className="text-sm font-semibold text-foreground">
-                    Exclusivo para {PLAN_LABELS[post.min_plan] ?? "assinantes"}
-                  </p>
-                  <Link
-                    to={`/creator/${post.creator_id}?openSubscribe=1&plan=${post.min_plan}`}
-                    className="rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
-                  >
-                    Desbloquear conteúdo
-                  </Link>
+                  {ppvLock && !planLock ? (
+                    <>
+                      <p className="text-sm font-semibold text-foreground text-center">
+                        Conteúdo exclusivo — desbloqueie com moedas
+                      </p>
+                      <div className="w-full max-w-xs">
+                        <UnlockPostButton postId={post.id} price={ppvPrice} onUnlocked={() => refetch()} />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold text-foreground">
+                        Exclusivo para {PLAN_LABELS[post.min_plan] ?? "assinantes"}
+                      </p>
+                      <Link
+                        to={`/creator/${post.creator_id}?openSubscribe=1&plan=${post.min_plan}`}
+                        className="rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
+                      >
+                        Desbloquear conteúdo
+                      </Link>
+                    </>
+                  )}
                 </div>
               )}
             </div>
