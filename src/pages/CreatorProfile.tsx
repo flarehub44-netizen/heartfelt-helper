@@ -89,25 +89,6 @@ const CreatorProfile = () => {
     }
   }, [searchParams]);
 
-  // Auto-open PIX modal when redirected with ?openSubscribe=1 (optionally ?plan=<key>)
-  useEffect(() => {
-    const open = searchParams.get("openSubscribe");
-    const planKey = searchParams.get("plan");
-    if (open === "1" && user && !authLoading && realProfile) {
-      if (planKey) {
-        const idx = plans.findIndex((p) => p.planKey === planKey);
-        if (idx >= 0) setSelectedPlan(idx);
-      }
-      setPixModalOpen(true);
-      const next = new URLSearchParams(searchParams);
-      next.delete("openSubscribe");
-      next.delete("plan");
-      navigate(
-        `/creator/${id}${next.toString() ? `?${next.toString()}` : ""}`,
-        { replace: true }
-      );
-    }
-  }, [searchParams, user, authLoading, realProfile, plans, id, navigate]);
 
   // Affiliate link management
   const { links: affiliateLinks, createLink: createAffiliateLink } = useAffiliateLinks(id);
