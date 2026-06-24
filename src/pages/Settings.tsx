@@ -353,7 +353,15 @@ const Settings = () => {
           {/* PLANOS */}
           <TabsContent value="plans">
             <div className="glass-card rounded-2xl p-6 flex flex-col gap-6">
-              <p className="text-sm text-muted-foreground">Defina os preços dos seus planos de assinatura mensal.</p>
+              <div className="rounded-xl border border-primary/30 bg-primary/5 p-3.5 text-sm text-foreground/90 leading-relaxed">
+                <p className="font-semibold mb-1">💳 Cobrança mensal</p>
+                <p className="text-muted-foreground">
+                  Todos os planos são <strong>renovados a cada 30 dias</strong> via PIX. Você define o preço e a descrição
+                  de cada nível — criamos 3 padrões para começar, mas você pode editar a qualquer momento. As mudanças
+                  valem para novas assinaturas; quem já assina mantém o preço da contratação até o fim do ciclo.
+                </p>
+              </div>
+
               {[
                 { key: "fan", label: "Fã", emoji: "💜", placeholder: "Ex: Acesso ao conteúdo exclusivo e mensagens diretas" },
                 { key: "superfan", label: "Super Fã", emoji: "💎", placeholder: "Ex: Tudo do plano Fã + vídeos em HD e lives privadas" },
