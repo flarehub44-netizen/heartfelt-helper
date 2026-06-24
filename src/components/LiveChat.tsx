@@ -29,7 +29,7 @@ export function LiveChat({ liveId, className }: LiveChatProps) {
   // Load recent messages
   useEffect(() => {
     supabase
-      .from("live_chat_messages" as any)
+      .from("live_chat_messages")
       .select("*, profiles(name, avatar_url)")
       .eq("live_id", liveId)
       .order("created_at", { ascending: true })
@@ -72,7 +72,7 @@ export function LiveChat({ liveId, className }: LiveChatProps) {
     setSending(true);
     setInput("");
     await supabase
-      .from("live_chat_messages" as any)
+      .from("live_chat_messages")
       .insert({ live_id: liveId, user_id: user.id, text });
     setSending(false);
   };
