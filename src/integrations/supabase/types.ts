@@ -670,6 +670,24 @@ export type Database = {
         }
         Relationships: []
       }
+      pix_rate_limit: {
+        Row: {
+          created_at: string
+          id: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           id: string
@@ -936,6 +954,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age_verified_at: string | null
           approved: boolean
           avatar_url: string | null
           bio: string | null
@@ -947,8 +966,10 @@ export type Database = {
           name: string
           role: string
           social_links: Json | null
+          terms_accepted_at: string | null
         }
         Insert: {
+          age_verified_at?: string | null
           approved?: boolean
           avatar_url?: string | null
           bio?: string | null
@@ -960,8 +981,10 @@ export type Database = {
           name: string
           role?: string
           social_links?: Json | null
+          terms_accepted_at?: string | null
         }
         Update: {
+          age_verified_at?: string | null
           approved?: boolean
           avatar_url?: string | null
           bio?: string | null
@@ -973,6 +996,7 @@ export type Database = {
           name?: string
           role?: string
           social_links?: Json | null
+          terms_accepted_at?: string | null
         }
         Relationships: []
       }
@@ -1161,6 +1185,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_age_and_terms: { Args: never; Returns: undefined }
       admin_ban_user: { Args: { p_user_id: string }; Returns: undefined }
       admin_delete_post: { Args: { p_post_id: string }; Returns: undefined }
       can_message_creator: { Args: { p_creator_id: string }; Returns: boolean }

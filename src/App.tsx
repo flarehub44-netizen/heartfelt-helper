@@ -30,6 +30,9 @@ import Bookmarks from "./pages/Bookmarks";
 import CreatorByHandle from "./pages/CreatorByHandle";
 import PostDetail from "./pages/PostDetail";
 import Wallet from "./pages/Wallet";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
 
@@ -38,14 +41,25 @@ const App = () => {
     () => localStorage.getItem("age_verified") !== "true"
   );
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     localStorage.setItem("age_verified", "true");
+    localStorage.setItem("terms_accepted", "true");
     setShowAgeGate(false);
+    // Persist server-side if user is authenticated (idempotent RPC)
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await supabase.rpc("accept_age_and_terms");
+      }
+    } catch {
+      // Non-fatal: localStorage still gates the UI
+    }
   };
 
   const handleDeny = () => {
     window.location.href = "https://google.com";
   };
+
 
   return (
   <QueryClientProvider client={queryClient}>
@@ -76,8 +90,11 @@ const App = () => {
             <Route path="/fan-onboarding" element={<ProtectedRoute><FanOnboarding /></ProtectedRoute>} />
             <Route path="/pending-approval" element={<PendingApproval />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
+
           </Routes>
         </AuthProvider>
       </BrowserRouter>
