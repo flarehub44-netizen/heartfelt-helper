@@ -366,24 +366,6 @@ const Feed = () => {
             ))}
           </div>
 
-          {/* Posts */}
-          {postsLoading ? (
-            Array.from({ length: 3 }).map((_, i) => <PostSkeleton key={i} />)
-          ) : feedPosts.length === 0 ? (
-            <div className="flex flex-col gap-5">
-              <div className="glass-card rounded-2xl p-8 text-center">
-                <Compass className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="font-semibold text-foreground mb-1">Seu feed está vazio</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Assine ou siga criadores para ver o conteúdo deles aqui.
-                </p>
-                <Link
-                  to="/discover"
-                  className="inline-flex rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
-                >
-                  Descobrir criadores
-                </Link>
-              </div>
           {/* Tabs: Seguindo / Descobrir */}
           {user && (
             <div className="flex items-center gap-1 border-b border-border/50">
