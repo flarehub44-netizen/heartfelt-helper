@@ -29,6 +29,7 @@ import Subscriptions from "./pages/Subscriptions";
 import Bookmarks from "./pages/Bookmarks";
 import CreatorByHandle from "./pages/CreatorByHandle";
 import PostDetail from "./pages/PostDetail";
+import Wallet from "./pages/Wallet";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
             <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
             <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
+            <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
             <Route path="/dashboard" element={<CreatorRoute><Dashboard /></CreatorRoute>} />
             <Route path="/settings" element={<CreatorRoute><Settings /></CreatorRoute>} />
             <Route path="/profile/:id" element={<FanProfile />} />

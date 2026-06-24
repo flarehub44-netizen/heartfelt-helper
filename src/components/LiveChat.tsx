@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import SendGiftButton from "@/components/SendGiftButton";
 
 interface ChatMessage {
   id: string;
@@ -124,6 +125,7 @@ export function LiveChat({ liveId, className }: LiveChatProps) {
             placeholder="Escreva uma mensagem..."
             className="h-8 text-sm bg-muted/20 border-border/50"
           />
+          <SendGiftButton liveId={liveId} />
           <button
             onClick={handleSend}
             disabled={!input.trim() || sending}
