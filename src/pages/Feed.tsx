@@ -12,6 +12,7 @@ import { useCreators } from "@/hooks/useCreators";
 import { useFanPreferences } from "@/hooks/useFanPreferences";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMySubscriptionMap } from "@/hooks/useMySubscriptions";
+import { useMyFollows } from "@/hooks/useMyFollows";
 import { planMeetsMin, PLAN_LABELS, getCheapestPlanForMin } from "@/lib/plans";
 import { getLoginPath } from "@/lib/authRedirect";
 import { useComments } from "@/hooks/useComments";
@@ -230,6 +231,8 @@ const Feed = () => {
   }, [realPosts, prefCategories]);
   const { user, profile } = useAuth();
   const mySubscriptionMap = useMySubscriptionMap();
+  const myFollows = useMyFollows();
+  const [feedTab, setFeedTab] = useState<"following" | "discover">("following");
   const [localLikes, setLocalLikes] = useState<Set<string>>(new Set());
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
   const [openMenu, setOpenMenu] = useState<string | null>(null);
@@ -240,10 +243,26 @@ const Feed = () => {
   const stories = realCreators?.slice(0, 6) ?? [];
   const suggestions = realCreators?.slice(0, 5) ?? [];
 
-  const creatorIds = [...new Set(sortedPosts.map((p) => p.creator_id))];
+  // Tab filtering: "Seguindo" = creators the user follows OR subscribes to.
+  const followingIds = useMemo(() => {
+    const ids = new Set<string>(myFollows);
+    mySubscriptionMap.forEach((_, k) => ids.add(k));
+    return ids;
+  }, [myFollows, mySubscriptionMap]);
+
+  const visiblePosts = useMemo(() => {
+    if (!user) return sortedPosts;
+    if (feedTab === "following") {
+      return sortedPosts.filter((p) => followingIds.has(p.creator_id));
+    }
+    // Discover = everything you DON'T already follow/sub to
+    return sortedPosts.filter((p) => !followingIds.has(p.creator_id));
+  }, [sortedPosts, feedTab, followingIds, user]);
+
+  const creatorIds = [...new Set(visiblePosts.map((p) => p.creator_id))];
   const { data: plansByCreator = {} } = useCreatorPlansByCreator(creatorIds);
 
-  const feedPosts = sortedPosts.map((p) => ({
+  const feedPosts = visiblePosts.map((p) => ({
     id: p.id,
     min_plan: p.min_plan,
     creator: {
@@ -347,6 +366,31 @@ const Feed = () => {
             ))}
           </div>
 
+          {/* Tabs: Seguindo / Descobrir */}
+          {user && (
+            <div className="flex items-center gap-1 border-b border-border/50">
+              {([
+                { key: "following", label: "Seguindo", count: followingIds.size },
+                { key: "discover", label: "Descobrir" },
+              ] as const).map((t) => (
+                <button
+                  key={t.key}
+                  onClick={() => setFeedTab(t.key)}
+                  className={`relative px-4 py-3 text-sm font-semibold transition-colors ${
+                    feedTab === t.key
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.label}
+                  {feedTab === t.key && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-primary rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Posts */}
           {postsLoading ? (
             Array.from({ length: 3 }).map((_, i) => <PostSkeleton key={i} />)
@@ -354,20 +398,47 @@ const Feed = () => {
             <div className="flex flex-col gap-5">
               <div className="glass-card rounded-2xl p-8 text-center">
                 <Compass className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-                <p className="font-semibold text-foreground mb-1">Seu feed está vazio</p>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Assine ou siga criadores para ver o conteúdo deles aqui.
-                </p>
-                <Link
-                  to="/discover"
-                  className="inline-flex rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
-                >
-                  Descobrir criadores
-                </Link>
+                {feedTab === "following" && user ? (
+                  <>
+                    <p className="font-semibold text-foreground mb-1">
+                      {followingIds.size === 0
+                        ? "Você ainda não segue ninguém"
+                        : "Sem novidades por enquanto"}
+                    </p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      {followingIds.size === 0
+                        ? "Siga ou assine criadores para ver o conteúdo deles aqui."
+                        : "Quem você segue ainda não publicou. Que tal descobrir algo novo?"}
+                    </p>
+                    <button
+                      onClick={() => setFeedTab("discover")}
+                      className="inline-flex rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
+                    >
+                      Ver aba Descobrir
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold text-foreground mb-1">Seu feed está vazio</p>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Assine ou siga criadores para ver o conteúdo deles aqui.
+                    </p>
+                    <Link
+                      to="/discover"
+                      className="inline-flex rounded-full bg-gradient-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
+                    >
+                      Descobrir criadores
+                    </Link>
+                  </>
+                )}
               </div>
               {(realCreators ?? []).length > 0 && (
                 <div className="glass-card rounded-2xl p-5">
-                  <p className="text-sm font-semibold text-foreground mb-4">Criadores em destaque</p>
+                  <p className="text-sm font-semibold text-foreground mb-4">
+                    {feedTab === "following" && user
+                      ? "Comece seguindo alguém"
+                      : "Criadores em destaque"}
+                  </p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {(realCreators ?? []).slice(0, 6).map((creator) => (
                       <Link
@@ -394,6 +465,7 @@ const Feed = () => {
             <div key={post.id} className="glass-card rounded-2xl overflow-hidden">
               {!post.locked && <PostViewTracker postId={post.id} />}
               <div className="flex items-center justify-between p-4">
+
                 <Link to={`/creator/${post.creator.id}`} className="flex items-center gap-3">
                   <img src={post.creator.avatar} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/30" />
                   <div>
