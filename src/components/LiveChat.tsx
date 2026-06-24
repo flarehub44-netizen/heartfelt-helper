@@ -105,7 +105,7 @@ export function LiveChat({ liveId, className }: LiveChatProps) {
               src={msg.profiles?.avatar_url ?? "/placeholder.svg"}
               alt=""
               className="h-6 w-6 rounded-full object-cover flex-shrink-0 ring-1 ring-border/40"
-            />
+             loading="lazy" decoding="async" />
             <div className="bg-muted/50 rounded-xl px-3 py-1.5 min-w-0 max-w-[85%]">
               <span className="text-xs font-semibold text-primary mr-1.5">{msg.profiles?.name ?? "Usuário"}</span>
               <span className="text-xs text-foreground/90">{msg.text}</span>

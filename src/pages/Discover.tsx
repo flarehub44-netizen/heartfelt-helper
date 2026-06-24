@@ -83,7 +83,7 @@ const Discover = () => {
                   className="flex-shrink-0 w-36 rounded-2xl border border-border/50 bg-card hover:border-primary/40 hover:scale-[1.03] transition-all overflow-hidden"
                 >
                   <div className="relative h-20">
-                    <img src={(c as any).cover_url || "/placeholder.svg"} alt="" className="h-full w-full object-cover" />
+                    <img src={(c as any).cover_url || "/placeholder.svg"} alt="" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                     {i === 0 && (
                       <span className="absolute top-2 left-2 rounded-full bg-gradient-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-glow">
@@ -96,7 +96,7 @@ const Discover = () => {
                       src={(c as any).avatar_url || "/placeholder.svg"}
                       alt={c.name}
                       className="h-9 w-9 rounded-full border-2 border-primary/50 object-cover mb-1"
-                    />
+                     loading="lazy" decoding="async" />
                     <p className="text-xs font-semibold text-foreground truncate">{c.name}</p>
                     <p className="text-[10px] text-muted-foreground flex items-center gap-0.5 mt-0.5">
                       <Heart className="h-2.5 w-2.5 text-primary" />

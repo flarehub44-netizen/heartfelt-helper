@@ -89,7 +89,7 @@ const Bookmarks = () => {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       {post.creator?.avatar_url ? (
-                        <img src={post.creator.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover flex-shrink-0" />
+                        <img src={post.creator.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover flex-shrink-0"  loading="lazy" decoding="async" />
                       ) : (
                         <div className="h-7 w-7 rounded-full bg-muted flex-shrink-0" />
                       )}

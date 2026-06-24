@@ -64,7 +64,7 @@ function CommentRow({ c, onReply }: { c: import("@/hooks/useComments").Comment; 
         src={c.author.avatar_url ?? "/placeholder.svg"}
         alt={c.author.name}
         className="h-7 w-7 rounded-full object-cover flex-shrink-0 ring-1 ring-border/40 mt-0.5"
-      />
+       loading="lazy" decoding="async" />
       <div className="flex-1 min-w-0">
         <div className="bg-muted/50 rounded-xl px-3 py-1.5 inline-block max-w-full">
           <span className="text-xs font-semibold text-foreground mr-1.5">{c.author.name}</span>
@@ -139,7 +139,7 @@ function CommentSection({ postId }: { postId: string }) {
               src={profile?.avatar_url ?? "/placeholder.svg"}
               alt=""
               className="h-7 w-7 rounded-full object-cover flex-shrink-0"
-            />
+             loading="lazy" decoding="async" />
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -170,7 +170,7 @@ function SuggestionItem({ creator }: { creator: { id: string | number; name: str
   return (
     <div className="flex items-center justify-between gap-2">
       <Link to={`/creator/${creator.id}`} className="flex items-center gap-2 min-w-0">
-        <img src={creator.avatar_url || (creator as any).avatar || "/placeholder.svg"} alt={creator.name} className="h-9 w-9 rounded-full object-cover flex-shrink-0" />
+        <img src={creator.avatar_url || (creator as any).avatar || "/placeholder.svg"} alt={creator.name} className="h-9 w-9 rounded-full object-cover flex-shrink-0"  loading="lazy" decoding="async" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
           <p className="text-xs text-muted-foreground">{creator.category}</p>
@@ -340,7 +340,7 @@ const Feed = () => {
                             src={avatarUrl((creator as any).avatar_url || (creator as any).avatar, 64)}
                             alt={creator.name}
                             className="h-full w-full rounded-full object-cover border-2 border-background"
-                          />
+                           loading="lazy" decoding="async" />
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground max-w-[60px] truncate">{creator.name.split(" ")[0]}</span>
@@ -357,7 +357,7 @@ const Feed = () => {
                   src={(creator as any).avatar_url || (creator as any).avatar || "/placeholder.svg"}
                   alt={creator.name}
                   className="h-8 w-8 rounded-full object-cover"
-                />
+                 loading="lazy" decoding="async" />
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-foreground truncate max-w-[80px]">{creator.name}</p>
                   <p className="text-[10px] text-muted-foreground">{(creator as any).category}</p>
@@ -450,7 +450,7 @@ const Feed = () => {
                           src={(creator as any).avatar_url || (creator as any).avatar || "/placeholder.svg"}
                           alt={creator.name}
                           className="h-10 w-10 rounded-full object-cover flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
-                        />
+                         loading="lazy" decoding="async" />
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-foreground truncate">{creator.name}</p>
                           <p className="text-[10px] text-muted-foreground truncate">{(creator as any).category ?? "Criador"}</p>
@@ -467,7 +467,7 @@ const Feed = () => {
               <div className="flex items-center justify-between p-4">
 
                 <Link to={`/creator/${post.creator.id}`} className="flex items-center gap-3">
-                  <img src={post.creator.avatar} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/30" />
+                  <img src={post.creator.avatar} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/30"  loading="lazy" decoding="async" />
                   <div>
                     <p className="text-sm font-semibold text-foreground">{post.creator.name}</p>
                     <p className="text-xs text-muted-foreground">@{post.creator.handle} · {post.time}</p>
@@ -638,7 +638,7 @@ const Feed = () => {
           <div className="glass-card rounded-2xl p-4 flex items-center gap-3">
             <div className="h-12 w-12 rounded-full bg-gradient-primary flex items-center justify-center shadow-glow flex-shrink-0">
               {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover" />
+                <img src={profile.avatar_url} alt="" className="h-full w-full rounded-full object-cover"  loading="lazy" decoding="async" />
               ) : (
                 <span className="text-primary-foreground font-bold text-lg">
                   {(profile?.name || "V").charAt(0).toUpperCase()}

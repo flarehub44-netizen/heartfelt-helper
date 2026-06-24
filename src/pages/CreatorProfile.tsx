@@ -443,7 +443,7 @@ const CreatorProfile = () => {
 
       {/* Cover */}
       <div className="relative h-72 md:h-96 mt-16">
-        <img src={creator.cover} alt="" className="h-full w-full object-cover" />
+        <img src={creator.cover} alt="" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <button
           onClick={() => navigate(-1)}
@@ -476,7 +476,7 @@ const CreatorProfile = () => {
         <div className="relative -mt-20 mb-8 flex flex-col md:flex-row md:items-end gap-6 md:gap-8">
           <div className="relative flex-shrink-0">
             <div className="h-32 w-32 rounded-2xl border-4 border-background overflow-hidden bg-muted ring-2 ring-primary/40 shadow-glow">
-              <img src={creator.avatar} alt={creator.name} className="h-full w-full object-cover" />
+              <img src={creator.avatar} alt={creator.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
             </div>
             {creator.verified && (
               <div className="absolute -bottom-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-gradient-primary shadow-glow">
@@ -783,7 +783,7 @@ const CreatorProfile = () => {
                               src={post.mediaUrl}
                               alt=""
                               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            />
+                             loading="lazy" decoding="async" />
                           ) : (
                             <div className="h-full w-full bg-gradient-to-br from-muted to-secondary flex items-center justify-center">
                               <span className="text-muted-foreground text-xs">Sem mídia</span>
@@ -814,7 +814,7 @@ const CreatorProfile = () => {
                               src={post.mediaUrl}
                               alt=""
                               className="h-full w-full object-cover blur-xl scale-110"
-                            />
+                             loading="lazy" decoding="async" />
                           ) : (
                             <div className="h-full w-full bg-gradient-to-br from-muted to-secondary blur-sm" />
                           )}
@@ -875,7 +875,7 @@ const CreatorProfile = () => {
                             src={post.mediaUrl}
                             alt=""
                             className="h-full w-full object-cover blur-xl scale-110"
-                          />
+                           loading="lazy" decoding="async" />
                         ) : (
                           <div className="h-full w-full bg-gradient-to-br from-primary/15 to-secondary/20" />
                         )}
@@ -893,7 +893,7 @@ const CreatorProfile = () => {
                             src={post.mediaUrl}
                             alt=""
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
-                          />
+                           loading="lazy" decoding="async" />
                         ) : (
                           <div className="h-full w-full bg-gradient-to-br from-muted to-secondary flex items-center justify-center">
                             <span className="text-muted-foreground text-xs">Sem mídia</span>
@@ -1162,7 +1162,7 @@ const CreatorProfile = () => {
               >
                 <div className="h-14 w-14 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
                   {c.avatar_url ? (
-                    <img src={c.avatar_url} alt={c.name} className="h-full w-full object-cover" />
+                    <img src={c.avatar_url} alt={c.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center bg-gradient-primary text-primary-foreground text-lg font-bold">
                       {c.name.charAt(0).toUpperCase()}

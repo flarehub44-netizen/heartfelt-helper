@@ -228,7 +228,7 @@ const FanProfile = () => {
       {/* Cover */}
       <div className="relative h-56 md:h-72 mt-16">
         {fan.cover_url ? (
-          <img src={fan.cover_url} alt="" className="h-full w-full object-cover" />
+          <img src={fan.cover_url} alt="" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/20 via-secondary/30 to-accent/20" />
         )}
@@ -246,7 +246,7 @@ const FanProfile = () => {
         <div className="relative -mt-16 mb-8 flex flex-col md:flex-row md:items-end gap-5 md:gap-7">
           <div className="h-28 w-28 rounded-2xl border-4 border-background overflow-hidden bg-muted ring-2 ring-primary/30 shadow-glow flex-shrink-0">
             {fan.avatar_url ? (
-              <img src={fan.avatar_url} alt={fan.name} className="h-full w-full object-cover" />
+              <img src={fan.avatar_url} alt={fan.name} className="h-full w-full object-cover"  loading="lazy" decoding="async" />
             ) : (
               <div className="h-full w-full flex items-center justify-center bg-gradient-primary">
                 <UserCircle2 className="h-12 w-12 text-primary-foreground/70" />
@@ -323,7 +323,7 @@ const FanProfile = () => {
                         src={creator.avatar_url ?? "/placeholder.svg"}
                         alt={creator.name}
                         className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/20 flex-shrink-0"
-                      />
+                       loading="lazy" decoding="async" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
                         {creator.handle && (
@@ -361,7 +361,7 @@ const FanProfile = () => {
                         src={creator.avatar_url ?? "/placeholder.svg"}
                         alt={creator.name}
                         className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/20 flex-shrink-0"
-                      />
+                       loading="lazy" decoding="async" />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
                         {creator.handle && (

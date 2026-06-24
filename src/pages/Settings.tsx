@@ -229,7 +229,7 @@ const Settings = () => {
                 <div className="relative">
                   <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
                   {avatarUrl ? (
-                    <img src={avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover ring-2 ring-primary/40" />
+                    <img src={avatarUrl} alt="" className="h-20 w-20 rounded-full object-cover ring-2 ring-primary/40"  loading="lazy" decoding="async" />
                   ) : (
                     <div className="h-20 w-20 rounded-full bg-muted ring-2 ring-primary/40 flex items-center justify-center text-2xl font-bold text-muted-foreground">
                       {profileForm.name.charAt(0).toUpperCase() || "?"}
@@ -254,7 +254,7 @@ const Settings = () => {
                   className="relative h-32 rounded-xl overflow-hidden border border-border/50 cursor-pointer group"
                 >
                   {authProfile?.cover_url ? (
-                    <img src={authProfile.cover_url} alt="Capa" className="h-full w-full object-cover" />
+                    <img src={authProfile.cover_url} alt="Capa" className="h-full w-full object-cover"  loading="lazy" decoding="async" />
                   ) : (
                     <div className="h-full w-full bg-muted/30 flex items-center justify-center">
                       <p className="text-sm text-muted-foreground">Clique para adicionar uma capa</p>

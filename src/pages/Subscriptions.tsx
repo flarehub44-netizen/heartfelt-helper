@@ -112,7 +112,7 @@ const Subscriptions = () => {
                     src={sub.creator_avatar || "/placeholder.svg"}
                     alt=""
                     className="h-14 w-14 rounded-full object-cover ring-2 ring-primary/30"
-                  />
+                   loading="lazy" decoding="async" />
                   <div className="flex-1 min-w-0">
                     <Link
                       to={`/creator/${sub.creator_id}`}
@@ -198,7 +198,7 @@ const Subscriptions = () => {
                   src={e.creatorAvatar || "/placeholder.svg"}
                   alt={e.creatorName}
                   className="h-10 w-10 rounded-full object-cover flex-shrink-0"
-                />
+                 loading="lazy" decoding="async" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{e.creatorName}</p>
                   <p className="text-xs text-muted-foreground">

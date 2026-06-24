@@ -157,7 +157,7 @@ const Navbar = () => {
                 className="h-9 w-9 rounded-full bg-gradient-primary shadow-glow flex items-center justify-center hover:scale-105 transition-transform overflow-hidden"
               >
                 {profile?.avatar_url ? (
-                  <img src={avatarUrl(profile.avatar_url, 36)} alt="" className="h-full w-full object-cover rounded-full" />
+                  <img src={avatarUrl(profile.avatar_url, 36)} alt="" className="h-full w-full object-cover rounded-full"  loading="lazy" decoding="async" />
                 ) : (
                   <User className="h-4 w-4 text-primary-foreground" />
                 )}

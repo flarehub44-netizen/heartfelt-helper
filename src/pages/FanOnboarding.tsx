@@ -19,7 +19,7 @@ function FollowableCreator({ creator }: { creator: { id: string | number; name: 
         src={creator.avatar_url || (creator as any).avatar || "/placeholder.svg"}
         alt={creator.name}
         className="h-12 w-12 rounded-full object-cover flex-shrink-0"
-      />
+       loading="lazy" decoding="async" />
       <div className="flex-1 min-w-0">
         <p className="font-medium text-sm text-foreground truncate">{creator.name}</p>
         <p className="text-xs text-muted-foreground">{creator.category}</p>
