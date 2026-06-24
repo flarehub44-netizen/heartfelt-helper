@@ -107,21 +107,98 @@ export type Database = {
         }
         Relationships: []
       }
+      conversion_events: {
+        Row: {
+          created_at: string
+          creator_id: string | null
+          event_name: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          creator_id?: string | null
+          event_name: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string | null
+          event_name?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      creator_lives: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          min_plan: string
+          scheduled_at: string | null
+          status: string
+          stream_url: string | null
+          thumbnail_url: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          min_plan?: string
+          scheduled_at?: string | null
+          status?: string
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          min_plan?: string
+          scheduled_at?: string | null
+          status?: string
+          stream_url?: string | null
+          thumbnail_url?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_lives_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_plans: {
         Row: {
           creator_id: string
+          description: string | null
           id: string
           plan_name: string
           price: number
         }
         Insert: {
           creator_id: string
+          description?: string | null
           id?: string
           plan_name: string
           price: number
         }
         Update: {
           creator_id?: string
+          description?: string | null
           id?: string
           plan_name?: string
           price?: number
@@ -135,33 +212,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      conversion_events: {
-        Row: {
-          created_at: string
-          creator_id: string | null
-          event_name: string
-          id: string
-          metadata: Json
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          creator_id?: string | null
-          event_name: string
-          id?: string
-          metadata?: Json
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          creator_id?: string | null
-          event_name?: string
-          id?: string
-          metadata?: Json
-          user_id?: string | null
-        }
-        Relationships: []
       }
       fan_preferences: {
         Row: {
@@ -225,6 +275,45 @@ export type Database = {
           },
         ]
       }
+      live_chat_messages: {
+        Row: {
+          created_at: string | null
+          id: string
+          live_id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          live_id: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          live_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_messages_live_id_fkey"
+            columns: ["live_id"]
+            isOneToOne: false
+            referencedRelation: "creator_lives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           created_at: string
@@ -261,6 +350,89 @@ export type Database = {
           {
             foreignKeyName: "messages_sender_id_fkey"
             columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          data: Json | null
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          data?: Json | null
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_checkouts: {
+        Row: {
+          amount: number
+          created_at: string
+          creator_id: string
+          fan_id: string
+          id: string
+          plan_name: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          creator_id: string
+          fan_id: string
+          id?: string
+          plan_name: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          creator_id?: string
+          fan_id?: string
+          id?: string
+          plan_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_checkouts_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_checkouts_fan_id_fkey"
+            columns: ["fan_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -321,11 +493,48 @@ export type Database = {
         }
         Relationships: []
       }
+      post_bookmarks: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_bookmarks_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           author_id: string
           created_at: string
           id: string
+          parent_id: string | null
           post_id: string
           text: string
         }
@@ -333,6 +542,7 @@ export type Database = {
           author_id: string
           created_at?: string
           id?: string
+          parent_id?: string | null
           post_id: string
           text: string
         }
@@ -340,6 +550,7 @@ export type Database = {
           author_id?: string
           created_at?: string
           id?: string
+          parent_id?: string | null
           post_id?: string
           text?: string
         }
@@ -352,51 +563,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "post_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "post_comments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts: {
-        Row: {
-          created_at: string
-          creator_id: string
-          id: string
-          likes_count: number
-          media_type: string | null
-          media_url: string | null
-          min_plan: string
-          text: string | null
-        }
-        Insert: {
-          created_at?: string
-          creator_id: string
-          id?: string
-          likes_count?: number
-          media_type?: string | null
-          media_url?: string | null
-          min_plan?: string
-          text?: string | null
-        }
-        Update: {
-          created_at?: string
-          creator_id?: string
-          id?: string
-          likes_count?: number
-          media_type?: string | null
-          media_url?: string | null
-          min_plan?: string
-          text?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_creator_id_fkey"
-            columns: ["creator_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -431,6 +608,86 @@ export type Database = {
           {
             foreignKeyName: "post_likes_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          viewer_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          viewer_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          viewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_views_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "post_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      posts: {
+        Row: {
+          created_at: string
+          creator_id: string
+          id: string
+          likes_count: number
+          media_type: string | null
+          media_url: string | null
+          min_plan: string
+          text: string | null
+          views_count: number
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          id?: string
+          likes_count?: number
+          media_type?: string | null
+          media_url?: string | null
+          min_plan?: string
+          text?: string | null
+          views_count?: number
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          id?: string
+          likes_count?: number
+          media_type?: string | null
+          media_url?: string | null
+          min_plan?: string
+          text?: string | null
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_creator_id_fkey"
+            columns: ["creator_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -594,6 +851,12 @@ export type Database = {
     Functions: {
       admin_ban_user: { Args: { p_user_id: string }; Returns: undefined }
       admin_delete_post: { Args: { p_post_id: string }; Returns: undefined }
+      can_message_creator: { Args: { p_creator_id: string }; Returns: boolean }
+      can_view_post_media: {
+        Args: { p_creator_id: string; p_min_plan: string }
+        Returns: boolean
+      }
+      cancel_subscription: { Args: { p_sub_id: string }; Returns: undefined }
       get_admin_creator_stats: {
         Args: never
         Returns: {
@@ -606,6 +869,29 @@ export type Database = {
           post_count: number
         }[]
       }
+      get_creator_list: {
+        Args: {
+          p_category?: string
+          p_limit?: number
+          p_offset?: number
+          p_search?: string
+        }
+        Returns: {
+          avatar_url: string
+          bio: string
+          category: string
+          cover_url: string
+          created_at: string
+          handle: string
+          id: string
+          min_price: number
+          name: string
+          post_count: number
+          role: string
+          social_links: Json
+          subscriber_count: number
+        }[]
+      }
       get_creator_monthly_revenue: {
         Args: { p_creator_id: string }
         Returns: {
@@ -613,20 +899,46 @@ export type Database = {
           value: number
         }[]
       }
-      get_feed_posts: {
-        Args: { p_limit?: number }
+      get_creator_post_stats: {
+        Args: { p_creator_id: string }
         Returns: {
-          id: string
-          text: string | null
-          media_url: string | null
-          media_type: string | null
-          likes_count: number
-          min_plan: string
           created_at: string
-          creator_id: string
-          creator: Json
+          likes_count: number
+          media_type: string
+          post_id: string
+          text: string
+          views_count: number
         }[]
       }
+      get_feed_posts:
+        | {
+            Args: { p_limit?: number; p_offset?: number }
+            Returns: {
+              created_at: string
+              creator: Json
+              creator_id: string
+              id: string
+              likes_count: number
+              media_type: string
+              media_url: string
+              min_plan: string
+              text: string
+            }[]
+          }
+        | {
+            Args: { p_limit?: number }
+            Returns: {
+              created_at: string
+              creator: Json
+              creator_id: string
+              id: string
+              likes_count: number
+              media_type: string
+              media_url: string
+              min_plan: string
+              text: string
+            }[]
+          }
       get_platform_stats: {
         Args: never
         Returns: {
@@ -644,6 +956,19 @@ export type Database = {
         }
         Returns: boolean
       }
+      plan_rank: { Args: { plan: string }; Returns: number }
+      record_checkout_abandoned: {
+        Args: {
+          p_amount: number
+          p_creator_id: string
+          p_creator_name: string
+          p_fan_id: string
+          p_plan_name: string
+        }
+        Returns: undefined
+      }
+      send_renewal_reminder: { Args: { p_sub_id: string }; Returns: undefined }
+      track_post_view: { Args: { p_post_id: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
