@@ -12,6 +12,8 @@ type FeedRow = {
   media_type: string | null;
   likes_count: number;
   min_plan: string;
+  ppv_price?: number | null;
+  unlocked?: boolean | null;
   created_at: string;
   creator_id: string;
   creator: {
@@ -31,6 +33,8 @@ function mapRow(row: FeedRow): PostWithCreator {
     media_type: row.media_type,
     likes_count: row.likes_count,
     min_plan: row.min_plan,
+    ppv_price: row.ppv_price ?? 0,
+    unlocked: row.unlocked ?? false,
     created_at: row.created_at,
     creator_id: row.creator_id,
     creator: {

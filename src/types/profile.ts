@@ -31,6 +31,8 @@ export interface PostWithCreator {
   media_type: string | null;
   likes_count: number;
   min_plan: string;
+  ppv_price?: number;
+  unlocked?: boolean;
   created_at: string;
   creator_id: string;
   creator: {
