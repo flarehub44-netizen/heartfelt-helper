@@ -1208,35 +1208,22 @@ export type Database = {
           views_count: number
         }[]
       }
-      get_feed_posts:
-        | {
-            Args: { p_limit?: number; p_offset?: number }
-            Returns: {
-              created_at: string
-              creator: Json
-              creator_id: string
-              id: string
-              likes_count: number
-              media_type: string
-              media_url: string
-              min_plan: string
-              text: string
-            }[]
-          }
-        | {
-            Args: { p_limit?: number }
-            Returns: {
-              created_at: string
-              creator: Json
-              creator_id: string
-              id: string
-              likes_count: number
-              media_type: string
-              media_url: string
-              min_plan: string
-              text: string
-            }[]
-          }
+      get_feed_posts: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          created_at: string
+          creator: Json
+          creator_id: string
+          id: string
+          likes_count: number
+          media_type: string
+          media_url: string
+          min_plan: string
+          ppv_price: number
+          text: string
+          unlocked: boolean
+        }[]
+      }
       get_platform_stats: {
         Args: never
         Returns: {
