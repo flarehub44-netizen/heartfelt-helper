@@ -56,7 +56,7 @@ export function usePosts() {
         p_offset: pageParam,
       });
       if (error) throw error;
-      return (data ?? []).map((row: FeedRow) => mapRow(row));
+      return (data ?? []).map((row) => mapRow(row as unknown as FeedRow));
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
