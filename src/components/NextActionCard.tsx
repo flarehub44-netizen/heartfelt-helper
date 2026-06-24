@@ -103,32 +103,33 @@ const NextActionCard = () => {
     success: "from-emerald-500/15 to-emerald-500/5 border-emerald-500/30 text-emerald-500",
   } as const;
 
-  const Wrap = action.href.startsWith("#") ? "div" : Link;
-  const wrapProps = action.href.startsWith("#") ? {} : { to: action.href };
-
-  return (
-    <Wrap
-      {...(wrapProps as never)}
-      className={`block rounded-2xl border bg-gradient-to-br ${tones[action.tone]} p-5 transition-transform hover:scale-[1.01] group`}
-    >
-      <div className="flex items-start gap-4">
-        <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-background/60 backdrop-blur ${tones[action.tone].split(" ").slice(-1)[0]}`}>
-          {action.icon}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Próxima ação</span>
-          </div>
-          <h3 className="font-display font-bold text-foreground text-base leading-snug">{action.title}</h3>
-          <p className="text-sm text-muted-foreground mt-1">{action.description}</p>
-        </div>
-        <div className="hidden sm:flex items-center gap-1.5 text-sm font-semibold flex-shrink-0 pt-2 group-hover:translate-x-0.5 transition-transform">
-          {action.cta}
-          <ArrowRight className="h-4 w-4" />
-        </div>
+  const iconColor = tones[action.tone].split(" ").slice(-1)[0];
+  const content = (
+    <div className="flex items-start gap-4">
+      <div className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-background/60 backdrop-blur ${iconColor}`}>
+        {action.icon}
       </div>
-    </Wrap>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Próxima ação</span>
+        </div>
+        <h3 className="font-display font-bold text-foreground text-base leading-snug">{action.title}</h3>
+        <p className="text-sm text-muted-foreground mt-1">{action.description}</p>
+      </div>
+      <div className="hidden sm:flex items-center gap-1.5 text-sm font-semibold flex-shrink-0 pt-2 group-hover:translate-x-0.5 transition-transform">
+        {action.cta}
+        <ArrowRight className="h-4 w-4" />
+      </div>
+    </div>
   );
+
+  const className = `block rounded-2xl border bg-gradient-to-br ${tones[action.tone]} p-5 transition-transform hover:scale-[1.01] group`;
+
+  if (action.href.startsWith("#")) {
+    return <div className={className}>{content}</div>;
+  }
+  return <Link to={action.href} className={className}>{content}</Link>;
 };
 
 export default NextActionCard;
+
