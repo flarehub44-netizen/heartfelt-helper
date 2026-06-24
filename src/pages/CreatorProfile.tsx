@@ -316,6 +316,27 @@ const CreatorProfile = () => {
         ? displayPosts.filter((p) => p.type === "video")
         : displayPosts;
 
+  // Auto-open PIX modal when redirected with ?openSubscribe=1 (optionally ?plan=<key>)
+  useEffect(() => {
+    const open = searchParams.get("openSubscribe");
+    const planKey = searchParams.get("plan");
+    if (open === "1" && user && !authLoading && realProfile) {
+      if (planKey) {
+        const idx = plans.findIndex((p) => p.planKey === planKey);
+        if (idx >= 0) setSelectedPlan(idx);
+      }
+      setPixModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("openSubscribe");
+      next.delete("plan");
+      navigate(
+        `/creator/${id}${next.toString() ? `?${next.toString()}` : ""}`,
+        { replace: true }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, user, authLoading, realProfile]);
+
   const handleLockedPostClick = (minPlan: string) => {
     if (!user) {
       navigate(getLoginPath(`/creator/${id}?openSubscribe=1`));
