@@ -68,6 +68,25 @@ export default function Wallet() {
     enabled: !!user,
   });
 
+  // First purchase = no "purchase" tx in history yet
+  const { data: hasPurchasedBefore = false } = useQuery({
+    queryKey: ["has-purchased", user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { count } = await supabase
+        .from("coin_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("type", "purchase");
+      return (count ?? 0) > 0;
+    },
+    enabled: !!user,
+  });
+  const isFirstPurchase = !hasPurchasedBefore;
+  const balance = wallet?.balance ?? 0;
+  const isLowBalance = balance < LOW_BALANCE_THRESHOLD;
+
+
   // Realtime: refresh balance when a new tx hits
   useEffect(() => {
     if (!user) return;
