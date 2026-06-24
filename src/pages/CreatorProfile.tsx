@@ -334,7 +334,7 @@ const CreatorProfile = () => {
       return;
     }
     if (!hasAccessTo(minPlan)) {
-      const idx = plans.findIndex((p) => normalizePlanName((p as { planKey?: string }).planKey ?? p.name) === normalizePlanName(minPlan));
+      const idx = plans.findIndex((p) => normalizePlanName(p.planKey ?? p.name) === normalizePlanName(minPlan));
       setSelectedPlan(idx >= 0 ? idx : 0);
       setPixModalOpen(true);
     }
@@ -342,7 +342,7 @@ const CreatorProfile = () => {
 
   const currentSubRank = subscription?.plan ? planRank(subscription.plan) : 0;
   const upgradePlanIndex = isSubscribed
-    ? plans.findIndex((p) => planRank((p as { planKey: string }).planKey) > currentSubRank)
+    ? plans.findIndex((p) => planRank(p.planKey) > currentSubRank)
     : -1;
 
   const highestLockedPlan = displayPosts
@@ -354,8 +354,8 @@ const CreatorProfile = () => {
     isSubscribed && highestLockedPlan
       ? plans.findIndex(
           (p) =>
-            planRank((p as { planKey: string }).planKey) >= planRank(highestLockedPlan) &&
-            planRank((p as { planKey: string }).planKey) > currentSubRank
+            planRank(p.planKey) >= planRank(highestLockedPlan) &&
+            planRank(p.planKey) > currentSubRank
         )
       : -1;
 
@@ -380,7 +380,7 @@ const CreatorProfile = () => {
 
   const getCheckoutAmount = (planIdx: number) => {
     if (isSubscribed && subscription?.plan && planIdx >= 0) {
-      const targetKey = (plans[planIdx] as { planKey: string }).planKey;
+      const targetKey = plans[planIdx].planKey;
       const diff = getUpgradePriceDiff(dbPlans, subscription.plan, targetKey);
       return diff > 0 ? diff : plans[planIdx].price;
     }
@@ -409,7 +409,7 @@ const CreatorProfile = () => {
       creator_pixel_id: creatorPixelId,
       creator_access_token: creatorAccessToken,
     });
-    trackConversion("checkout_initiated", { creatorId: id, metadata: { plan: (plans[planIdx] as { planKey: string }).planKey } });
+    trackConversion("checkout_initiated", { creatorId: id, metadata: { plan: plans[planIdx].planKey } });
     setPixModalOpen(true);
   };
 
@@ -1111,7 +1111,7 @@ const CreatorProfile = () => {
             onSuccess={() => {}}
             creatorId={id!}
             creatorName={creator.name}
-            planName={(plans[selectedPlan] as { planKey: string }).planKey}
+            planName={plans[selectedPlan].planKey}
             amount={getCheckoutAmount(selectedPlan)}
             fanId={user.id}
             fanEmail={user.email ?? ""}
