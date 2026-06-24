@@ -282,20 +282,34 @@ const CreatorProfile = () => {
     handle: realProfile.handle || "criador",
   };
 
-  const plans = realPlans.length
+  type PlanCard = {
+    name: string;
+    planKey: string;
+    emoji: string;
+    desc: string;
+    perks: string[];
+    price: number;
+    popular: boolean;
+  };
+
+  const plans: PlanCard[] = realPlans.length
     ? realPlans.map((p, i) => ({
         name: PLAN_LABELS[p.plan_name] ?? p.plan_name,
         planKey: p.plan_name,
         emoji: ["💖", "🔥", "💎"][i % 3],
-        desc: (p as any).description || (defaultPlans[i % 3]?.desc ?? ""),
+        desc: (p as { description?: string }).description || (defaultPlans[i % 3]?.desc ?? ""),
         perks: defaultPlans[i % 3]?.perks ?? [],
         price: Number(p.price),
         popular: i === 1,
       }))
     : defaultPlans.map((p, i) => ({
-        ...p,
+        name: p.name,
         planKey: PLAN_ORDER[i] ?? "fan",
-        price: (creator as any).price * p.multiplier,
+        emoji: p.emoji,
+        desc: p.desc,
+        perks: p.perks,
+        price: creator.price * p.multiplier,
+        popular: p.popular,
       }));
 
   // Build display posts from real data
