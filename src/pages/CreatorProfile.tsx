@@ -11,6 +11,7 @@ import { useFollow } from "@/hooks/useFollow";
 import { toast } from "sonner";
 import { sendMetaEvent } from "@/lib/metaCapi";
 import { PixPaymentModal } from "@/components/PixPaymentModal";
+import TipCoinsButton from "@/components/TipCoinsButton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -1039,6 +1040,7 @@ const CreatorProfile = () => {
                     </button>
                   </div>
                 )}
+                <TipCoinsButton creatorId={creator.id} creatorName={creator.name} />
               </div>
             )}
 
