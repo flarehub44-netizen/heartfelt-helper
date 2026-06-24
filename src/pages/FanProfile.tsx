@@ -24,6 +24,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 import { SignedImage } from "@/components/SignedMedia";
+import NextActionCard from "@/components/NextActionCard";
+import DailyStreakCard from "@/components/DailyStreakCard";
+
 
 interface FanProfileData {
   id: string;
@@ -281,8 +284,21 @@ const FanProfile = () => {
           )}
         </div>
 
+        {/* Fan dashboard: next action + streak */}
+        {isOwn && !isCreatorOwner && (
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="md:col-span-2">
+              <NextActionCard />
+            </div>
+            <div id="streak">
+              <DailyStreakCard />
+            </div>
+          </div>
+        )}
+
         {/* Content grid */}
         <div className="grid md:grid-cols-2 gap-6 pb-8">
+
           {/* Followed creators */}
           <div className="glass-card rounded-2xl p-5">
             <h2 className="font-display font-bold text-foreground mb-4 flex items-center gap-2">
