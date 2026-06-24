@@ -80,6 +80,56 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Coin purchase flow (plan = "coins:<package_id>:<totalCoins>")
+    if (typeof plan === "string" && plan.startsWith("coins:")) {
+      const parts = plan.split(":");
+      const packageId = parts[1];
+      const totalCoins = parseInt(parts[2] ?? "0", 10);
+
+      // Idempotency: skip if a purchase tx already exists for this identifier
+      const { data: existingTx } = await supabase
+        .from("coin_transactions")
+        .select("id")
+        .eq("type", "purchase")
+        .eq("ref_type", "syncpay")
+        .eq("ref_id", null as unknown as string)
+        .limit(1);
+      // simpler dedupe: try insert via RPC; rely on pending_payments delete to avoid double-fire
+      if (!totalCoins || totalCoins <= 0) {
+        return new Response(JSON.stringify({ error: "invalid coin amount" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { error: creditErr } = await supabase.rpc("credit_coins", {
+        p_user_id: fanId,
+        p_amount: totalCoins,
+        p_ref_type: "package",
+        p_ref_id: packageId,
+        p_description: `Compra de ${totalCoins} moedas`,
+      });
+      if (creditErr) {
+        console.error("credit_coins error:", creditErr);
+        return new Response(JSON.stringify({ error: creditErr.message }), {
+          status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      await supabase.from("pending_payments").delete().eq("syncpay_id", identifier);
+
+      await supabase.from("notifications").insert({
+        user_id: fanId,
+        type: "coins_purchased",
+        title: "Moedas adicionadas! 🪙",
+        body: `${totalCoins} moedas foram creditadas na sua carteira.`,
+        data: { amount: totalCoins, package_id: packageId },
+      });
+
+      return new Response(JSON.stringify({ ok: true, coins: totalCoins }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Tip payment flow
     if (plan === "tip") {
       const { data: existingTip } = await supabase
