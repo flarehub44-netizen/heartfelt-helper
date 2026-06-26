@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   DollarSign, Users, FileImage, TrendingUp, Upload, Bell, Settings,
   ArrowUpRight, ArrowDownRight, Plus, Eye, X, BarChart3, Repeat2,
@@ -47,6 +47,8 @@ const Dashboard = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [liveModalOpen, setLiveModalOpen] = useState(false);
+  const navigate = useNavigate();
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: lives = [] } = useCreatorLives(user?.id);
@@ -581,8 +583,10 @@ const Dashboard = () => {
           open={liveModalOpen}
           onClose={() => setLiveModalOpen(false)}
           creatorId={user.id}
+          onCreated={() => navigate(`/creator/${user.id}?tab=Lives`)}
         />
       )}
+
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={(open) => { if (!open) closePreview(); }}>
