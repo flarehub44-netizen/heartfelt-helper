@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   DollarSign, Users, FileImage, TrendingUp, Upload, Bell, Settings,
   ArrowUpRight, ArrowDownRight, Plus, Eye, X, BarChart3, Repeat2,
