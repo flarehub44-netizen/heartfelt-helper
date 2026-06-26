@@ -583,8 +583,10 @@ const Dashboard = () => {
           open={liveModalOpen}
           onClose={() => setLiveModalOpen(false)}
           creatorId={user.id}
+          onCreated={() => navigate(`/creator/${user.id}?tab=Lives`)}
         />
       )}
+
 
       {/* Preview Modal */}
       <Dialog open={previewOpen} onOpenChange={(open) => { if (!open) closePreview(); }}>
