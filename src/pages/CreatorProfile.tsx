@@ -599,7 +599,7 @@ const CreatorProfile = () => {
                       className="flex items-center gap-1.5 rounded-full bg-gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
                     >
                       <Video className="h-3.5 w-3.5" />
-                      Agendar Live
+                      Iniciar Live
                     </button>
                   </div>
                 )}
@@ -618,7 +618,7 @@ const CreatorProfile = () => {
                         onClick={() => setScheduleLiveOpen(true)}
                         className="rounded-full bg-gradient-primary px-5 py-2 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform mt-1"
                       >
-                        Agendar agora
+                        Iniciar agora
                       </button>
                     )}
                   </div>

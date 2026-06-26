@@ -173,7 +173,7 @@ const Dashboard = () => {
               className="hidden sm:flex items-center gap-2 rounded-full bg-gradient-primary text-primary-foreground shadow-glow hover:scale-105 transition-transform text-sm px-4 h-9"
             >
               <Video className="h-3.5 w-3.5" />
-              Agendar Live
+              Iniciar Live
             </Button>
             <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground hover:text-foreground transition-colors">
               <Bell className="h-4 w-4" />
@@ -394,7 +394,7 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Agende uma live e avise seus fãs com antecedência.</p>
               </div>
               <Button size="sm" onClick={() => setLiveModalOpen(true)} className="rounded-full bg-gradient-primary text-primary-foreground text-xs px-4 h-8 mt-1">
-                Agendar live
+                Iniciar live
               </Button>
             </div>
           ) : (

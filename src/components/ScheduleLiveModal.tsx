@@ -68,7 +68,7 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-4 w-4 text-primary" />
-            Agendar Live
+            Iniciar Live
           </DialogTitle>
         </DialogHeader>
 
