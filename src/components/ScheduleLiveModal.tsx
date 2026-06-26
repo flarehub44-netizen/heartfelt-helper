@@ -53,6 +53,8 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
     try {
       await create.mutateAsync(payload);
       toast.success(status === "live" ? "Live iniciada!" : "Live agendada com sucesso!");
+      onCreated?.(status);
+
       reset();
       onClose();
     } catch {
