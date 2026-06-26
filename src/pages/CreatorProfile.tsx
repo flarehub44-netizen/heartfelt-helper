@@ -83,6 +83,16 @@ const CreatorProfile = () => {
   const [showTipPicker, setShowTipPicker] = useState(false);
   const [scheduleLiveOpen, setScheduleLiveOpen] = useState(false);
 
+  // Pre-select tab from ?tab=
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab && ["Todos", "Fotos", "Vídeos", "Lives"].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+
+
   // Capture ref code from URL
   useEffect(() => {
     const ref = searchParams.get("ref");
