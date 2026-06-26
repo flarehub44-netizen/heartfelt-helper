@@ -3,11 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/lib/env';
 
-const supabaseFetch: typeof fetch = async (input, init = {}) => {
-  const headers = new Headers(init.headers);
+const supabaseFetch: typeof fetch = async (input, init) => {
+  const headers = new Headers(init?.headers);
   if (!headers.has("apikey")) headers.set("apikey", SUPABASE_PUBLISHABLE_KEY);
   if (!headers.has("Authorization")) headers.set("Authorization", `Bearer ${SUPABASE_PUBLISHABLE_KEY}`);
-  return fetch(input, { ...init, headers });
+  return fetch(input, { ...(init ?? {}), headers });
 };
 
 // Import the supabase client like this:
