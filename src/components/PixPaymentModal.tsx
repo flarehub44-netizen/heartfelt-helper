@@ -13,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { sendMetaEvent } from "@/lib/metaCapi";
+import { SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 import { trackConversion } from "@/lib/conversionEvents";
 
 interface PixPaymentModalProps {
