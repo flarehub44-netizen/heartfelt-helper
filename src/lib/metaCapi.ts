@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 
 interface MetaCapiEvent {
   event_name: string;
@@ -11,18 +11,15 @@ interface MetaCapiEvent {
 
 export async function sendMetaEvent(event: MetaCapiEvent): Promise<void> {
   try {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
     const capiSecret = import.meta.env.VITE_META_CAPI_SECRET as string | undefined;
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      apikey: anonKey,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
     };
     if (capiSecret) headers["x-meta-capi-secret"] = capiSecret;
 
     await fetch(
-      `https://${projectId}.supabase.co/functions/v1/meta-capi`,
+      `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/meta-capi`,
       {
         method: "POST",
         headers,
