@@ -50,6 +50,37 @@ export function useManageLives(creatorId: string | undefined) {
 
   const create = useMutation({
     mutationFn: async (live: NewLive) => {
+      const { data: authData, error: authError } = await supabase.auth.getUser();
+      if (authError || !authData.user) {
+        throw new Error("Faça login novamente para iniciar a live.");
+      }
+
+      if (!creatorId || creatorId !== authData.user.id) {
+        throw new Error("Você só pode iniciar live no seu próprio perfil.");
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("id, role")
+        .eq("id", creatorId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!profile) {
+        const meta = authData.user.user_metadata ?? {};
+        const { error: createProfileError } = await supabase.from("profiles").insert({
+          id: creatorId,
+          name: meta.name || authData.user.email?.split("@")[0] || "Criador",
+          role: "creator",
+          handle: meta.handle || null,
+          category: meta.category || null,
+          approved: true,
+        });
+        if (createProfileError) throw createProfileError;
+      } else if (profile.role !== "creator") {
+        throw new Error("Sua conta precisa estar como criador para iniciar lives.");
+      }
+
       const { data, error } = await supabase
         .from("creator_lives")
         .insert({ ...live, creator_id: creatorId })

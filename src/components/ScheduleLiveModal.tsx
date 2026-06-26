@@ -57,8 +57,9 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
 
       reset();
       onClose();
-    } catch {
-      toast.error("Erro ao salvar live. Tente novamente.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erro ao salvar live. Tente novamente.";
+      toast.error(message || "Erro ao salvar live. Tente novamente.");
     }
   };
 
