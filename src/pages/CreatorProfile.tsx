@@ -620,7 +620,7 @@ const CreatorProfile = () => {
                 ) : (
                   lives.map((live) => {
                     const canView = live.min_plan === "free" || (!!user && hasAccessTo(live.min_plan));
-                    const embedUrl = live.stream_url ? getEmbedUrl(live.stream_url) : null;
+                    const isNative = !live.stream_url || live.stream_url === "native";
                     const isLive = live.status === "live";
                     const isScheduled = live.status === "scheduled";
                     const isEnded = live.status === "ended";
