@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 
 export interface AdminCreator {
   creator_id: string;
