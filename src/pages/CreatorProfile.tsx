@@ -702,15 +702,12 @@ const CreatorProfile = () => {
                         {isLive && (
                           canView ? (
                             <div>
-                              {embedUrl ? (
-                                <div className="aspect-video w-full bg-black">
-                                  <iframe
-                                    src={embedUrl}
-                                    className="h-full w-full"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                  />
-                                </div>
+                              {isNative ? (
+                                <NativeLivePlayer
+                                  liveId={live.id}
+                                  isHost={isOwner}
+                                  onEnd={isOwner ? () => updateLive.mutate({ id: live.id, status: "ended" }) : undefined}
+                                />
                               ) : (
                                 <div className="flex flex-col items-center gap-2 py-8 bg-muted/20 text-center">
                                   <Radio className="h-8 w-8 text-red-400 animate-pulse" />
