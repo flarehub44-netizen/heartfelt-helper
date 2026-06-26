@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Video, VideoOff, Mic, MicOff, Radio } from "lucide-react";
+import { Loader2, Video, VideoOff, Mic, MicOff, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const RTC_CONFIG: RTCConfiguration = {
@@ -27,6 +27,7 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
   const [micOn, setMicOn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(!isHost);
+  const [hostPreparing, setHostPreparing] = useState(isHost);
 
   useEffect(() => {
     const myId = myIdRef.current;
@@ -118,15 +119,18 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
         if (status !== "SUBSCRIBED") return;
         if (isHost) {
           try {
+            setHostPreparing(true);
             const stream = await navigator.mediaDevices.getUserMedia({
               video: { width: { ideal: 1280 }, height: { ideal: 720 } },
               audio: true,
             });
             localStreamRef.current = stream;
             if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+            setHostPreparing(false);
             send("host-ready", { from: myId });
           } catch (e) {
             const msg = e instanceof Error ? e.message : "permissão negada";
+            setHostPreparing(false);
             setError("Não foi possível acessar câmera/microfone: " + msg);
           }
         } else {
@@ -191,6 +195,13 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-2">
             <Radio className="h-8 w-8 text-red-400 animate-pulse" />
             <p className="text-sm text-white">Conectando à transmissão...</p>
+          </div>
+        )}
+
+        {hostPreparing && isHost && !error && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-2">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-white">Preparando câmera e microfone...</p>
           </div>
         )}
 
