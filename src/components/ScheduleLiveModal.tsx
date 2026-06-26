@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Calendar, Video, Lock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -71,6 +71,9 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
             <Video className="h-4 w-4 text-primary" />
             Iniciar Live
           </DialogTitle>
+          <DialogDescription>
+            Configure o acesso e inicie uma transmissão nativa pelo navegador.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4 py-2">
