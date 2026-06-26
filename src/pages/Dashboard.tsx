@@ -47,6 +47,8 @@ const Dashboard = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [liveModalOpen, setLiveModalOpen] = useState(false);
+  const navigate = useNavigate();
+
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: lives = [] } = useCreatorLives(user?.id);
