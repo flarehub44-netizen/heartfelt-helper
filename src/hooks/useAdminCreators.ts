@@ -62,12 +62,11 @@ async function sendCreatorApprovedEmail(creatorId: string) {
     .eq("id", creatorId)
     .maybeSingle();
 
-  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  await fetch(`https://${projectId}.supabase.co/functions/v1/send-notification`, {
+  await fetch(`https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/send-notification`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      apikey: SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
       user_id: creatorId,
