@@ -11,9 +11,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   creatorId: string;
+  onCreated?: (status: "scheduled" | "live") => void;
 }
 
-export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
+export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props) {
+
   const { create } = useManageLives(creatorId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
