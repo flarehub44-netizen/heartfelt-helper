@@ -26,9 +26,10 @@ import { getLoginPath } from "@/lib/authRedirect";
 import { normalizePlanName, PLAN_LABELS, PLAN_BADGES, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
 import { trackConversion } from "@/lib/conversionEvents";
 import { useMeta } from "@/hooks/useMeta";
-import { useCreatorLives, useManageLives, getEmbedUrl } from "@/hooks/useCreatorLives";
+import { useCreatorLives, useManageLives } from "@/hooks/useCreatorLives";
 import { ScheduleLiveModal } from "@/components/ScheduleLiveModal";
 import { LiveChat } from "@/components/LiveChat";
+import { NativeLivePlayer } from "@/components/NativeLivePlayer";
 import { SignedImage } from "@/components/SignedMedia";
 import { useSimilarCreators } from "@/hooks/useSimilarCreators";
 
@@ -619,7 +620,7 @@ const CreatorProfile = () => {
                 ) : (
                   lives.map((live) => {
                     const canView = live.min_plan === "free" || (!!user && hasAccessTo(live.min_plan));
-                    const embedUrl = live.stream_url ? getEmbedUrl(live.stream_url) : null;
+                    const isNative = !live.stream_url || live.stream_url === "native";
                     const isLive = live.status === "live";
                     const isScheduled = live.status === "scheduled";
                     const isEnded = live.status === "ended";
@@ -701,15 +702,12 @@ const CreatorProfile = () => {
                         {isLive && (
                           canView ? (
                             <div>
-                              {embedUrl ? (
-                                <div className="aspect-video w-full bg-black">
-                                  <iframe
-                                    src={embedUrl}
-                                    className="h-full w-full"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowFullScreen
-                                  />
-                                </div>
+                              {isNative ? (
+                                <NativeLivePlayer
+                                  liveId={live.id}
+                                  isHost={isOwner}
+                                  onEnd={isOwner ? () => updateLive.mutate({ id: live.id, status: "ended" }) : undefined}
+                                />
                               ) : (
                                 <div className="flex flex-col items-center gap-2 py-8 bg-muted/20 text-center">
                                   <Radio className="h-8 w-8 text-red-400 animate-pulse" />

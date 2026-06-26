@@ -17,17 +17,15 @@ export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
   const { create } = useManageLives(creatorId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [streamUrl, setStreamUrl] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
-  const [status, setStatus] = useState<"scheduled" | "live">("scheduled");
+  const [status, setStatus] = useState<"scheduled" | "live">("live");
   const [minPlan, setMinPlan] = useState("free");
 
   const reset = () => {
     setTitle("");
     setDescription("");
-    setStreamUrl("");
     setScheduledAt("");
-    setStatus("scheduled");
+    setStatus("live");
     setMinPlan("free");
   };
 
@@ -36,11 +34,15 @@ export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
       toast.error("Adicione um título para a live");
       return;
     }
+    if (status === "scheduled" && !scheduledAt) {
+      toast.error("Escolha a data e o horário do agendamento");
+      return;
+    }
 
     const payload: NewLive = {
       title: title.trim(),
       description: description.trim() || undefined,
-      stream_url: streamUrl.trim() || undefined,
+      stream_url: "native",
       scheduled_at: scheduledAt || undefined,
       status,
       min_plan: minPlan,
@@ -88,46 +90,44 @@ export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
             />
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label className="flex items-center gap-1.5">
-              <Video className="h-3.5 w-3.5 text-muted-foreground" />
-              Link da stream (YouTube ou Twitch)
-            </Label>
-            <input
-              value={streamUrl}
-              onChange={(e) => setStreamUrl(e.target.value)}
-              placeholder="https://youtube.com/live/... ou https://twitch.tv/..."
-              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-            <p className="text-[11px] text-muted-foreground">Suporta YouTube Live e Twitch. O player será incorporado na sua página.</p>
+          <div className="rounded-lg border border-border/50 bg-muted/20 p-3 text-xs text-muted-foreground">
+            <p className="flex items-center gap-1.5 font-medium text-foreground">
+              <Video className="h-3.5 w-3.5 text-primary" />
+              Transmissão nativa pelo navegador
+            </p>
+            <p className="mt-1">
+              Ao iniciar, vamos pedir acesso à sua câmera e microfone. Os fãs assistem direto no seu perfil — sem YouTube ou Twitch.
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label className="flex items-center gap-1.5">
-                <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                Data e horário
-              </Label>
-              <input
-                type="datetime-local"
-                value={scheduledAt}
-                onChange={(e) => setScheduledAt(e.target.value)}
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label>Status</Label>
+              <Label>Quando</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as "scheduled" | "live")}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="scheduled">📅 Agendada</SelectItem>
-                  <SelectItem value="live">🔴 Ao vivo agora</SelectItem>
+                  <SelectItem value="live">🔴 Iniciar agora</SelectItem>
+                  <SelectItem value="scheduled">📅 Agendar</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {status === "scheduled" && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                  Data e horário
+                </Label>
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
