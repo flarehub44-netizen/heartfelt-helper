@@ -394,7 +394,7 @@ const Dashboard = () => {
                 <p className="text-xs text-muted-foreground mt-0.5">Agende uma live e avise seus fãs com antecedência.</p>
               </div>
               <Button size="sm" onClick={() => setLiveModalOpen(true)} className="rounded-full bg-gradient-primary text-primary-foreground text-xs px-4 h-8 mt-1">
-                Agendar live
+                Iniciar live
               </Button>
             </div>
           ) : (
