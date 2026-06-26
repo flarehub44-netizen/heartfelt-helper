@@ -1222,7 +1222,9 @@ const CreatorProfile = () => {
           open={scheduleLiveOpen}
           onClose={() => setScheduleLiveOpen(false)}
           creatorId={id!}
+          onCreated={() => setActiveTab("Lives")}
         />
+
       )}
 
       {/* Edit post modal */}

@@ -11,9 +11,11 @@ interface Props {
   open: boolean;
   onClose: () => void;
   creatorId: string;
+  onCreated?: (status: "scheduled" | "live") => void;
 }
 
-export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
+export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props) {
+
   const { create } = useManageLives(creatorId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -51,6 +53,8 @@ export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
     try {
       await create.mutateAsync(payload);
       toast.success(status === "live" ? "Live iniciada!" : "Live agendada com sucesso!");
+      onCreated?.(status);
+
       reset();
       onClose();
     } catch {
