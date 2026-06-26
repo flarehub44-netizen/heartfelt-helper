@@ -26,9 +26,10 @@ import { getLoginPath } from "@/lib/authRedirect";
 import { normalizePlanName, PLAN_LABELS, PLAN_BADGES, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
 import { trackConversion } from "@/lib/conversionEvents";
 import { useMeta } from "@/hooks/useMeta";
-import { useCreatorLives, useManageLives, getEmbedUrl } from "@/hooks/useCreatorLives";
+import { useCreatorLives, useManageLives } from "@/hooks/useCreatorLives";
 import { ScheduleLiveModal } from "@/components/ScheduleLiveModal";
 import { LiveChat } from "@/components/LiveChat";
+import { NativeLivePlayer } from "@/components/NativeLivePlayer";
 import { SignedImage } from "@/components/SignedMedia";
 import { useSimilarCreators } from "@/hooks/useSimilarCreators";
 
