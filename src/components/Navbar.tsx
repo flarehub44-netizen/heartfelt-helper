@@ -64,6 +64,7 @@ const Navbar = () => {
 
   const guestLinks = [
     { label: "Início", to: "/" },
+    { label: "Feed", to: "/feed" },
     { label: "Descobrir", to: "/discover" },
   ];
 
