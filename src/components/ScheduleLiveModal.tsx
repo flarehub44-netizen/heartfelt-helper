@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { useManageLives, NewLive } from "@/hooks/useCreatorLives";
+import { CreatorLive, useManageLives, NewLive } from "@/hooks/useCreatorLives";
 
 interface Props {
   open: boolean;
   onClose: () => void;
   creatorId: string;
-  onCreated?: (status: "scheduled" | "live") => void;
+  onCreated?: (status: "scheduled" | "live", live?: CreatorLive) => void;
 }
 
 export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props) {
@@ -51,9 +51,9 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
     };
 
     try {
-      await create.mutateAsync(payload);
+      const createdLive = await create.mutateAsync(payload);
       toast.success(status === "live" ? "Live iniciada!" : "Live agendada com sucesso!");
-      onCreated?.(status);
+      onCreated?.(status, createdLive);
 
       reset();
       onClose();

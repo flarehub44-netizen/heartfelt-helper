@@ -53,8 +53,8 @@ Deno.serve(async (req) => {
   const META_CAPI_SECRET = Deno.env.get("META_CAPI_SECRET");
 
   if (!META_CAPI_TOKEN) {
-    return new Response(JSON.stringify({ error: "META_CAPI_TOKEN not configured" }), {
-      status: 500,
+    return new Response(JSON.stringify({ skipped: true, reason: "META_CAPI_TOKEN not configured" }), {
+      status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
