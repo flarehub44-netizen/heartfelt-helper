@@ -618,7 +618,7 @@ const CreatorProfile = () => {
                         onClick={() => setScheduleLiveOpen(true)}
                         className="rounded-full bg-gradient-primary px-5 py-2 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform mt-1"
                       >
-                        Agendar agora
+                        Iniciar agora
                       </button>
                     )}
                   </div>
