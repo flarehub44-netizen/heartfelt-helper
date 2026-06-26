@@ -17,17 +17,15 @@ export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
   const { create } = useManageLives(creatorId);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [streamUrl, setStreamUrl] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
-  const [status, setStatus] = useState<"scheduled" | "live">("scheduled");
+  const [status, setStatus] = useState<"scheduled" | "live">("live");
   const [minPlan, setMinPlan] = useState("free");
 
   const reset = () => {
     setTitle("");
     setDescription("");
-    setStreamUrl("");
     setScheduledAt("");
-    setStatus("scheduled");
+    setStatus("live");
     setMinPlan("free");
   };
 
@@ -36,11 +34,15 @@ export function ScheduleLiveModal({ open, onClose, creatorId }: Props) {
       toast.error("Adicione um título para a live");
       return;
     }
+    if (status === "scheduled" && !scheduledAt) {
+      toast.error("Escolha a data e o horário do agendamento");
+      return;
+    }
 
     const payload: NewLive = {
       title: title.trim(),
       description: description.trim() || undefined,
-      stream_url: streamUrl.trim() || undefined,
+      stream_url: "native",
       scheduled_at: scheduledAt || undefined,
       status,
       min_plan: minPlan,
