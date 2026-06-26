@@ -32,9 +32,14 @@ export function useCreatorLives(creatorId: string | undefined) {
         .from("creator_lives")
         .select("*")
         .eq("creator_id", creatorId!)
-        .order("scheduled_at", { ascending: false });
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as CreatorLive[];
+      return ((data ?? []) as CreatorLive[]).sort((a, b) => {
+        const statusRank = { live: 0, scheduled: 1, ended: 2 } as const;
+        const byStatus = statusRank[a.status] - statusRank[b.status];
+        if (byStatus !== 0) return byStatus;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
     },
   });
 }
@@ -45,12 +50,26 @@ export function useManageLives(creatorId: string | undefined) {
 
   const create = useMutation({
     mutationFn: async (live: NewLive) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("creator_lives")
-        .insert({ ...live, creator_id: creatorId });
+        .insert({ ...live, creator_id: creatorId })
+        .select("*")
+        .single();
       if (error) throw error;
+      return data as CreatorLive;
     },
-    onSuccess: invalidate,
+    onSuccess: (createdLive) => {
+      queryClient.setQueryData<CreatorLive[]>(["creatorLives", creatorId], (current = []) => {
+        const withoutDuplicate = current.filter((live) => live.id !== createdLive.id);
+        return [createdLive, ...withoutDuplicate].sort((a, b) => {
+          const statusRank = { live: 0, scheduled: 1, ended: 2 } as const;
+          const byStatus = statusRank[a.status] - statusRank[b.status];
+          if (byStatus !== 0) return byStatus;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+      });
+      invalidate();
+    },
   });
 
   const update = useMutation({
