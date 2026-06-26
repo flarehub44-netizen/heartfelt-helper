@@ -243,6 +243,28 @@ const CreatorProfile = () => {
   const { data: lives = [] } = useCreatorLives(id);
   const { remove: removeLive, update: updateLive } = useManageLives(isOwner ? id : undefined);
 
+  // Auto-open PIX modal when redirected with ?openSubscribe=1 (optionally ?plan=<key>)
+  // Must be declared before any early return (React rules of hooks)
+  useEffect(() => {
+    const open = searchParams.get("openSubscribe");
+    const planKey = searchParams.get("plan");
+    if (open === "1" && user && !authLoading && realProfile) {
+      if (planKey) {
+        const idx = realPlans.findIndex((p) => p.plan_name === planKey);
+        if (idx >= 0) setSelectedPlan(idx);
+      }
+      setPixModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("openSubscribe");
+      next.delete("plan");
+      navigate(
+        `/creator/${id}${next.toString() ? `?${next.toString()}` : ""}`,
+        { replace: true }
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, user, authLoading, realProfile]);
+
   // If no real profile found, show 404
   if (!realProfile) {
     return (
@@ -258,6 +280,7 @@ const CreatorProfile = () => {
       </div>
     );
   }
+
 
   const creator = {
     ...realProfile,
