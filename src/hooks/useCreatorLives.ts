@@ -81,6 +81,16 @@ export function useManageLives(creatorId: string | undefined) {
         throw new Error("Sua conta precisa estar como criador para iniciar lives.");
       }
 
+      if ((live.status ?? "scheduled") === "live") {
+        const { error: closePreviousError } = await supabase
+          .from("creator_lives")
+          .update({ status: "ended" })
+          .eq("creator_id", creatorId)
+          .eq("status", "live");
+
+        if (closePreviousError) throw closePreviousError;
+      }
+
       const { data, error } = await supabase
         .from("creator_lives")
         .insert({ ...live, creator_id: creatorId })
@@ -105,6 +115,17 @@ export function useManageLives(creatorId: string | undefined) {
 
   const update = useMutation({
     mutationFn: async ({ id, ...data }: Partial<CreatorLive> & { id: string }) => {
+      if (data.status === "live" && creatorId) {
+        const { error: closePreviousError } = await supabase
+          .from("creator_lives")
+          .update({ status: "ended" })
+          .eq("creator_id", creatorId)
+          .eq("status", "live")
+          .neq("id", id);
+
+        if (closePreviousError) throw closePreviousError;
+      }
+
       const { data: updatedLive, error } = await supabase
         .from("creator_lives")
         .update(data)
