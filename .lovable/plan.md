@@ -1,34 +1,29 @@
-Plano para corrigir o erro ao salvar live:
+Plano para corrigir a live que fica presa em “Conectando à transmissão...”:
 
-1. Corrigir permissões da tabela `creator_lives`
-   - Adicionar permissões explícitas para usuários logados criarem, lerem, atualizarem e removerem as próprias lives.
-   - Manter leitura pública apenas para lives gratuitas, conforme a política já existente.
-   - Garantir acesso administrativo via `service_role`.
+1. Corrigir o fluxo do criador ao iniciar live
+   - Depois de criar uma live nativa, garantir que o criador permaneça/entre automaticamente na aba “Lives”.
+   - Renderizar imediatamente o `NativeLivePlayer` como host para abrir a câmera/microfone e enviar o sinal `host-ready`.
+   - Evitar que a live fique marcada como “ao vivo” no banco sem uma sessão de transmissão ativa no navegador do criador.
 
-2. Corrigir permissões auxiliares da tabela `profiles`
-   - O fluxo de criação da live consulta o perfil do usuário e, em alguns casos, cria o perfil se ele não existir.
-   - Adicionar permissões explícitas compatíveis com as políticas existentes: leitura pública, criação/edição do próprio perfil para usuários logados e acesso administrativo.
+2. Melhorar o estado do espectador
+   - Se o espectador abrir uma live nativa mas o criador não estiver com a câmera/transmissão ativa, trocar o texto infinito “Conectando à transmissão...” por uma mensagem clara: “Aguardando o criador iniciar a câmera”.
+   - Manter tentativa automática de reconexão quando o host ficar pronto.
+   - Não exibir como erro fatal quando é apenas ausência temporária do host.
 
-3. Preservar as regras de segurança existentes
-   - Não abrir lives privadas para usuários anônimos.
-   - Não alterar a lógica de assinatura/plano mínimo.
-   - Não desativar RLS.
+3. Tornar o WebRTC mais robusto
+   - Reenviar o sinal de entrada do espectador enquanto ele aguarda, em intervalos curtos e controlados.
+   - Adicionar tratamento de falhas de conexão para voltar ao estado de espera em vez de ficar em tela preta.
+   - Garantir que o vídeo remoto chame `play()` ao receber a stream, reduzindo casos em que o navegador recebe a transmissão mas não inicia reprodução.
 
-4. Validar depois da migração
-   - Conferir no banco se as permissões aparecem para `creator_lives` e `profiles`.
-   - Verificar que o botão “Iniciar live” consegue salvar a live quando o usuário logado é o próprio criador.
-   - Se ainda houver erro, a tela deverá mostrar a mensagem real retornada pelo Supabase para isolar o próximo bloqueio.
+4. Melhorar o controle de encerramento
+   - Quando o criador encerrar a live, parar tracks locais, fechar peers e atualizar o status para `ended`.
+   - Para espectadores, ao receber encerramento/desconexão, mostrar estado informativo em vez de permanecer conectando.
 
-Detalhes técnicos:
+Arquivos previstos:
 
-```sql
-GRANT SELECT ON public.creator_lives TO anon;
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.creator_lives TO authenticated;
-GRANT ALL ON public.creator_lives TO service_role;
-
-GRANT SELECT ON public.profiles TO anon;
-GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
-GRANT ALL ON public.profiles TO service_role;
+```text
+src/components/NativeLivePlayer.tsx
+src/pages/CreatorProfile.tsx
 ```
 
-As políticas RLS atuais continuam controlando quem realmente pode acessar cada linha.
+Não vou alterar regras de plano/assinatura nem permissões do Supabase, porque a live já está sendo salva e o problema agora é a sessão de transmissão em tempo real.
