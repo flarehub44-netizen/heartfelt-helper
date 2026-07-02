@@ -1,19 +1,34 @@
-## Plano para corrigir a live que inicia mas não aparece
+Plano para corrigir o erro ao salvar live:
 
-1. **Garantir que a nova live entre imediatamente na tela**
-   - Ajustar a criação da live para retornar o registro criado pelo Supabase.
-   - Atualizar o cache local de `creatorLives` com essa nova live, sem depender apenas do refetch.
-   - Ao criar pelo perfil, trocar para a aba `Lives` e manter a lista já atualizada.
+1. Corrigir permissões da tabela `creator_lives`
+   - Adicionar permissões explícitas para usuários logados criarem, lerem, atualizarem e removerem as próprias lives.
+   - Manter leitura pública apenas para lives gratuitas, conforme a política já existente.
+   - Garantir acesso administrativo via `service_role`.
 
-2. **Corrigir ordenação/listagem de lives sem data agendada**
-   - A live iniciada agora fica com `scheduled_at` vazio; vou ajustar a consulta para ordenar por `created_at` e priorizar lives `live`, evitando que ela suma por ordenação/null.
+2. Corrigir permissões auxiliares da tabela `profiles`
+   - O fluxo de criação da live consulta o perfil do usuário e, em alguns casos, cria o perfil se ele não existir.
+   - Adicionar permissões explícitas compatíveis com as políticas existentes: leitura pública, criação/edição do próprio perfil para usuários logados e acesso administrativo.
 
-3. **Adicionar estado visual de inicialização do player**
-   - Quando o card da live aparecer, o player nativo deve mostrar claramente “Preparando câmera e microfone...” até o navegador pedir permissão.
-   - Se a câmera/microfone falharem, mostrar erro dentro do player em vez de parecer que não aconteceu nada.
+3. Preservar as regras de segurança existentes
+   - Não abrir lives privadas para usuários anônimos.
+   - Não alterar a lógica de assinatura/plano mínimo.
+   - Não desativar RLS.
 
-4. **Ajustar ação do Dashboard**
-   - Ao iniciar pelo Dashboard, redirecionar para o perfil na aba `Lives` e garantir que a live recém-criada apareça mesmo antes do refetch terminar.
+4. Validar depois da migração
+   - Conferir no banco se as permissões aparecem para `creator_lives` e `profiles`.
+   - Verificar que o botão “Iniciar live” consegue salvar a live quando o usuário logado é o próprio criador.
+   - Se ainda houver erro, a tela deverá mostrar a mensagem real retornada pelo Supabase para isolar o próximo bloqueio.
 
-5. **Validar o fluxo principal**
-   - Testar: clicar em `Iniciar agora` no perfil, confirmar que o card da live aparece, o player monta e a UI pede câmera/microfone ou mostra erro claro.
+Detalhes técnicos:
+
+```sql
+GRANT SELECT ON public.creator_lives TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.creator_lives TO authenticated;
+GRANT ALL ON public.creator_lives TO service_role;
+
+GRANT SELECT ON public.profiles TO anon;
+GRANT SELECT, INSERT, UPDATE ON public.profiles TO authenticated;
+GRANT ALL ON public.profiles TO service_role;
+```
+
+As políticas RLS atuais continuam controlando quem realmente pode acessar cada linha.
