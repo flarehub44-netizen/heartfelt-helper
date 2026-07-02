@@ -24,6 +24,8 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
   const myIdRef = useRef<string>(crypto.randomUUID());
   const remoteConnectedRef = useRef(false);
   const liveEndedRef = useRef(false);
+  const sendRef = useRef<((event: string, payload: Record<string, unknown>) => void) | null>(null);
+  const onEndRef = useRef(onEnd);
   const [viewers, setViewers] = useState(0);
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
@@ -31,6 +33,10 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
   const [waiting, setWaiting] = useState(!isHost);
   const [viewerStatus, setViewerStatus] = useState("Aguardando o criador iniciar a câmera...");
   const [hostPreparing, setHostPreparing] = useState(isHost);
+
+  useEffect(() => {
+    onEndRef.current = onEnd;
+  }, [onEnd]);
 
   useEffect(() => {
     const myId = myIdRef.current;
@@ -48,6 +54,7 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
 
     const send = (event: string, payload: Record<string, unknown>) =>
       void channel.send({ type: "broadcast", event, payload });
+    sendRef.current = send;
 
     const closePeers = () => {
       Object.values(peersRef.current).forEach((p) => p.close());
@@ -186,7 +193,7 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
             const msg = e instanceof Error ? e.message : "permissão negada";
             setHostPreparing(false);
             setError("Não foi possível acessar câmera/microfone: " + msg);
-            onEnd?.();
+            onEndRef.current?.();
           }
         } else {
           setViewerStatus("Aguardando o criador iniciar a câmera...");
@@ -207,9 +214,10 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
       closePeers();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
+      sendRef.current = null;
       supabase.removeChannel(channel);
     };
-  }, [liveId, isHost, onEnd]);
+  }, [liveId, isHost]);
 
   const toggleCam = () => {
     const t = localStreamRef.current?.getVideoTracks()[0];
@@ -232,12 +240,8 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
     peersRef.current = {};
     localStreamRef.current?.getTracks().forEach((t) => t.stop());
     localStreamRef.current = null;
-    void supabase.channel(`live:${liveId}`).send({
-      type: "broadcast",
-      event: "host-ended",
-      payload: { from: myIdRef.current },
-    });
-    onEnd?.();
+    sendRef.current?.("host-ended", { from: myIdRef.current });
+    onEndRef.current?.();
   };
 
   return (
