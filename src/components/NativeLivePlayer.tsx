@@ -22,23 +22,41 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
   const localStreamRef = useRef<MediaStream | null>(null);
   const peersRef = useRef<Record<string, RTCPeerConnection>>({});
   const myIdRef = useRef<string>(crypto.randomUUID());
+  const remoteConnectedRef = useRef(false);
+  const liveEndedRef = useRef(false);
   const [viewers, setViewers] = useState(0);
   const [camOn, setCamOn] = useState(true);
   const [micOn, setMicOn] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(!isHost);
+  const [viewerStatus, setViewerStatus] = useState("Aguardando o criador iniciar a câmera...");
   const [hostPreparing, setHostPreparing] = useState(isHost);
 
   useEffect(() => {
     const myId = myIdRef.current;
+    remoteConnectedRef.current = false;
+    liveEndedRef.current = false;
+    setError(null);
+    setWaiting(!isHost);
+    setHostPreparing(isHost);
+    setViewerStatus("Aguardando o criador iniciar a câmera...");
+
     const channel = supabase.channel(`live:${liveId}`, {
       config: { broadcast: { self: false } },
     });
+    let joinRetry: number | undefined;
 
     const send = (event: string, payload: Record<string, unknown>) =>
-      channel.send({ type: "broadcast", event, payload });
+      void channel.send({ type: "broadcast", event, payload });
+
+    const closePeers = () => {
+      Object.values(peersRef.current).forEach((p) => p.close());
+      peersRef.current = {};
+      setViewers(0);
+    };
 
     const createPeer = (remoteId: string): RTCPeerConnection => {
+      peersRef.current[remoteId]?.close();
       const pc = new RTCPeerConnection(RTC_CONFIG);
       peersRef.current[remoteId] = pc;
 
@@ -52,16 +70,33 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
         pc.ontrack = (e) => {
           if (remoteVideoRef.current && e.streams[0]) {
             remoteVideoRef.current.srcObject = e.streams[0];
+            remoteVideoRef.current.play().catch(() => {
+              setViewerStatus("Toque no vídeo para assistir à transmissão.");
+            });
+            remoteConnectedRef.current = true;
             setWaiting(false);
+            setViewerStatus("Conectado à transmissão");
           }
         };
       }
 
       pc.onconnectionstatechange = () => {
+        if (pc.connectionState === "connected" && !isHost) {
+          remoteConnectedRef.current = true;
+          setWaiting(false);
+          setViewerStatus("Conectado à transmissão");
+        }
+
         if (["failed", "closed", "disconnected"].includes(pc.connectionState)) {
           pc.close();
           delete peersRef.current[remoteId];
           setViewers(Object.keys(peersRef.current).length);
+          if (!isHost && !liveEndedRef.current) {
+            remoteConnectedRef.current = false;
+            setWaiting(true);
+            setViewerStatus("Conexão interrompida. Tentando reconectar...");
+            send("join", { from: myId });
+          }
         }
       };
 
@@ -113,7 +148,25 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
       .on("broadcast", { event: "host-ready" }, ({ payload }) => {
         if (isHost) return;
         // Re-announce when host comes online
+        setViewerStatus("Criador online. Conectando...");
         send("join", { from: myId, hostId: payload.from });
+      })
+      .on("broadcast", { event: "host-left" }, () => {
+        if (isHost) return;
+        remoteConnectedRef.current = false;
+        closePeers();
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+        setWaiting(true);
+        setViewerStatus("Transmissão pausada. Aguardando o criador voltar...");
+      })
+      .on("broadcast", { event: "host-ended" }, () => {
+        if (isHost) return;
+        liveEndedRef.current = true;
+        remoteConnectedRef.current = false;
+        closePeers();
+        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+        setWaiting(true);
+        setViewerStatus("Live encerrada pelo criador.");
       })
       .subscribe(async (status) => {
         if (status !== "SUBSCRIBED") return;
@@ -126,26 +179,37 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
             });
             localStreamRef.current = stream;
             if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+            await localVideoRef.current?.play().catch(() => undefined);
             setHostPreparing(false);
             send("host-ready", { from: myId });
           } catch (e) {
             const msg = e instanceof Error ? e.message : "permissão negada";
             setHostPreparing(false);
             setError("Não foi possível acessar câmera/microfone: " + msg);
+            onEnd?.();
           }
         } else {
+          setViewerStatus("Aguardando o criador iniciar a câmera...");
           send("join", { from: myId });
+          joinRetry = window.setInterval(() => {
+            if (!remoteConnectedRef.current && !liveEndedRef.current) {
+              send("join", { from: myId });
+            }
+          }, 4000);
         }
       });
 
     return () => {
-      Object.values(peersRef.current).forEach((p) => p.close());
-      peersRef.current = {};
+      if (joinRetry) window.clearInterval(joinRetry);
+      if (isHost && localStreamRef.current) {
+        send("host-left", { from: myId });
+      }
+      closePeers();
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
       supabase.removeChannel(channel);
     };
-  }, [liveId, isHost]);
+  }, [liveId, isHost, onEnd]);
 
   const toggleCam = () => {
     const t = localStreamRef.current?.getVideoTracks()[0];
@@ -160,6 +224,20 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
       t.enabled = !t.enabled;
       setMicOn(t.enabled);
     }
+  };
+
+  const handleEnd = () => {
+    liveEndedRef.current = true;
+    Object.values(peersRef.current).forEach((p) => p.close());
+    peersRef.current = {};
+    localStreamRef.current?.getTracks().forEach((t) => t.stop());
+    localStreamRef.current = null;
+    void supabase.channel(`live:${liveId}`).send({
+      type: "broadcast",
+      event: "host-ended",
+      payload: { from: myIdRef.current },
+    });
+    onEnd?.();
   };
 
   return (
@@ -194,7 +272,7 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
         {waiting && !isHost && !error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 gap-2">
             <Radio className="h-8 w-8 text-red-400 animate-pulse" />
-            <p className="text-sm text-white">Conectando à transmissão...</p>
+            <p className="text-sm text-white">{viewerStatus}</p>
           </div>
         )}
 
@@ -221,7 +299,7 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
             {micOn ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
           </Button>
           {onEnd && (
-            <Button size="sm" variant="destructive" onClick={onEnd}>
+            <Button size="sm" variant="destructive" onClick={handleEnd}>
               Encerrar live
             </Button>
           )}
