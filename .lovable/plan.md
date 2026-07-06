@@ -1,29 +1,35 @@
-Plano para corrigir a live que fica presa em “Conectando à transmissão...”:
+## Objetivo
+Corrigir os erros 403 nas consultas de `creator_lives` e `posts`, e o 422/erro ao iniciar live, sem abrir dados privados indevidamente.
 
-1. Corrigir o fluxo do criador ao iniciar live
-   - Depois de criar uma live nativa, garantir que o criador permaneça/entre automaticamente na aba “Lives”.
-   - Renderizar imediatamente o `NativeLivePlayer` como host para abrir a câmera/microfone e enviar o sinal `host-ready`.
-   - Evitar que a live fique marcada como “ao vivo” no banco sem uma sessão de transmissão ativa no navegador do criador.
+## Diagnóstico
+- As políticas RLS de `creator_lives` e `posts` existem e parecem permitir os acessos esperados.
+- Porém não há nenhum `GRANT` explícito para `anon`, `authenticated` ou `service_role` nessas duas tabelas.
+- No Supabase/PostgREST, sem `GRANT`, a API REST retorna 403 mesmo quando a RLS permitiria a operação.
 
-2. Melhorar o estado do espectador
-   - Se o espectador abrir uma live nativa mas o criador não estiver com a câmera/transmissão ativa, trocar o texto infinito “Conectando à transmissão...” por uma mensagem clara: “Aguardando o criador iniciar a câmera”.
-   - Manter tentativa automática de reconexão quando o host ficar pronto.
-   - Não exibir como erro fatal quando é apenas ausência temporária do host.
+## Plano de implementação
+1. Criar uma migração Supabase para adicionar permissões Data API nas tabelas afetadas:
+   - `creator_lives`
+     - leitura pública apenas para lives gratuitas, controlada pela RLS existente
+     - leitura/criação/edição/remoção para usuários autenticados, controlada pela RLS existente
+     - acesso total para `service_role`
+   - `posts`
+     - leitura pública apenas para posts gratuitos, controlada pela RLS existente
+     - leitura/criação/edição/remoção para usuários autenticados, controlada pela RLS existente
+     - acesso total para `service_role`
+2. Não alterar as regras RLS atuais de assinatura/planos; apenas restaurar o acesso da Data API.
+3. Após a migração, validar novamente que os grants aparecem para as duas tabelas.
+4. Se o 422 persistir depois do 403, investigar a requisição específica que ainda falha, porque o 422 pode ser consequência do bloqueio anterior ou de payload inválido na criação da live.
 
-3. Tornar o WebRTC mais robusto
-   - Reenviar o sinal de entrada do espectador enquanto ele aguarda, em intervalos curtos e controlados.
-   - Adicionar tratamento de falhas de conexão para voltar ao estado de espera em vez de ficar em tela preta.
-   - Garantir que o vídeo remoto chame `play()` ao receber a stream, reduzindo casos em que o navegador recebe a transmissão mas não inicia reprodução.
+## SQL previsto
+```sql
+GRANT SELECT ON public.creator_lives TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.creator_lives TO authenticated;
+GRANT ALL ON public.creator_lives TO service_role;
 
-4. Melhorar o controle de encerramento
-   - Quando o criador encerrar a live, parar tracks locais, fechar peers e atualizar o status para `ended`.
-   - Para espectadores, ao receber encerramento/desconexão, mostrar estado informativo em vez de permanecer conectando.
-
-Arquivos previstos:
-
-```text
-src/components/NativeLivePlayer.tsx
-src/pages/CreatorProfile.tsx
+GRANT SELECT ON public.posts TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.posts TO authenticated;
+GRANT ALL ON public.posts TO service_role;
 ```
 
-Não vou alterar regras de plano/assinatura nem permissões do Supabase, porque a live já está sendo salva e o problema agora é a sessão de transmissão em tempo real.
+## Observação
+Os avisos do Facebook Pixel sobre `form-action 'self'` são separados dos erros Supabase; posso tratar o CSP depois, mas não é a causa do erro de lives/posts.
