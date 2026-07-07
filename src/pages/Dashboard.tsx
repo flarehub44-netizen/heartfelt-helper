@@ -137,6 +137,15 @@ const Dashboard = () => {
       if (uploadError) throw uploadError;
 
       const mediaType = previewFile.type.startsWith("video") ? "video" : "image";
+
+      // Bake watermark on images (non-fatal if it fails)
+      if (mediaType === "image") {
+        try {
+          await supabase.functions.invoke("watermark-image", { body: { path } });
+        } catch (wmErr) {
+          console.warn("watermark failed, keeping original", wmErr);
+        }
+      }
       const { error: postError } = await supabase.from("posts").insert({
         creator_id: user.id,
         text: postText || null,
