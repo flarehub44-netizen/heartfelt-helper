@@ -58,7 +58,7 @@ const Index = () => {
     { icon: Gift, title: "Conteúdo PPV desbloqueável", desc: "Poste fotos e vídeos com preço individual — o fã paga pra desbloquear." },
     { icon: MessageCircle, title: "DMs exclusivas pra VIPs", desc: "Só quem assina o plano VIP pode te mandar mensagem. Chega de spam." },
     { icon: TrendingUp, title: "Programa de afiliadas", desc: "Ganhe indicando outras criadoras — % vitalícia sobre o que elas faturarem." },
-    { icon: Shield, title: "Proteção anti-print", desc: "Marca d'água automática com dados do fã e detecção de vazamento." },
+    { icon: Shield, title: "Mídia protegida", desc: "Bucket privado, URLs assinadas de 1h e marca d'água automática no upload com seu @ e ID do post." },
     { icon: BadgeCheck, title: "Suporte humano em PT-BR", desc: "Time brasileiro no WhatsApp. Sem chatbot gringo, sem espera de 3 dias." },
     { icon: Lock, title: "Sem bloqueios arbitrários", desc: "Regras claras. Sua conta não some do dia pra noite como acontece por aí." },
   ];
@@ -215,7 +215,7 @@ const Index = () => {
                   "Suporte em português",
                   "Sem conta internacional",
                   "Regras claras, sem banimento",
-                  "Marca d'água anti-vazamento",
+                  "Marca d'água automática no upload",
                 ].map((i) => (
                   <li key={i} className="flex items-start gap-2 text-foreground">
                     <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
