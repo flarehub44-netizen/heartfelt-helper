@@ -21,14 +21,16 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [status, setStatus] = useState<"scheduled" | "live">("live");
-  const [minPlan, setMinPlan] = useState("free");
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [minPlan, setMinPlan] = useState("fan");
 
   const reset = () => {
     setTitle("");
     setDescription("");
     setScheduledAt("");
     setStatus("live");
-    setMinPlan("free");
+    setVisibility("public");
+    setMinPlan("fan");
   };
 
   const handleSubmit = async () => {
