@@ -288,6 +288,32 @@ const Feed = () => {
     if (post && !localLikes.has(id)) {
       setLocalLikes((prev) => new Set(prev).add(id));
       likePost.mutate({ postId: id });
+      // Post-like tip nudge — surface once per session per creator
+      if (user && user.id !== post.creator_id) {
+        const key = `tip_nudge_${post.creator_id}`;
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, "1");
+          const TIP = 10;
+          toast(`Curtiu? Manda ${TIP} 🪙 para ${post.creator.name}`, {
+            duration: 6000,
+            action: {
+              label: `Enviar ${TIP} 🪙`,
+              onClick: async () => {
+                const { error } = await supabase.rpc("tip_with_coins", {
+                  p_creator_id: post.creator_id,
+                  p_amount: TIP,
+                  p_message: null,
+                });
+                if (error) {
+                  toast.error(error.message.includes("saldo") ? "Saldo insuficiente — recarregue a carteira" : error.message);
+                } else {
+                  toast.success(`Enviou ${TIP} 🪙 para ${post.creator.name}!`);
+                }
+              },
+            },
+          });
+        }
+      }
     }
   };
 
