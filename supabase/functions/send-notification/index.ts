@@ -12,6 +12,16 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Server-to-server only. Require shared internal secret so anyone with
+    // the public function URL cannot spam arbitrary users with emails.
+    const expected = Deno.env.get("INTERNAL_FN_SECRET");
+    if (!expected || req.headers.get("x-internal-secret") !== expected) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { to_email, user_id, subject, body, template } = await req.json();
 
     if (!subject) {
