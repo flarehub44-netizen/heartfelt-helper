@@ -49,7 +49,7 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
       stream_url: "native",
       scheduled_at: scheduledAt || undefined,
       status,
-      min_plan: minPlan,
+      min_plan: visibility === "public" ? "free" : minPlan,
     };
 
     try {
