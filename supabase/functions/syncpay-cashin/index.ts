@@ -135,9 +135,12 @@ Deno.serve(async (req) => {
     const syncpayToken = await getSyncPayToken();
     console.log("SyncPay token obtained (first 20 chars):", syncpayToken?.substring(0, 20));
 
-    // Build webhook URL
+    // Build webhook URL — append shared secret so the webhook can authenticate.
     const projectId = Deno.env.get("SUPABASE_URL")!.split(".")[0].split("//")[1];
-    const webhookUrl = `https://${projectId}.supabase.co/functions/v1/syncpay-webhook`;
+    const webhookSecret = Deno.env.get("SYNCPAY_WEBHOOK_SECRET") ?? "";
+    const webhookUrl = webhookSecret
+      ? `https://${projectId}.supabase.co/functions/v1/syncpay-webhook?secret=${encodeURIComponent(webhookSecret)}`
+      : `https://${projectId}.supabase.co/functions/v1/syncpay-webhook`;
 
     // Generate Pix charge
     // SyncPay expects amount in BRL (float), NOT cents
