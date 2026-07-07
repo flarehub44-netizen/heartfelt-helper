@@ -350,6 +350,7 @@ const Feed = () => {
       <div className="container max-w-6xl pt-24 pb-24 md:pb-16 flex gap-8">
         <div className="flex-1 min-w-0 flex flex-col gap-6">
           <RenewalBanner />
+          <LiveNowBanner />
           <div className="glass-card rounded-2xl p-4">
             <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
               {creatorsLoading
