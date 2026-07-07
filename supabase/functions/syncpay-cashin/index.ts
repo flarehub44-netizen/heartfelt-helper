@@ -8,6 +8,25 @@ const corsHeaders = {
 
 const SYNCPAY_BASE = "https://api.syncpayments.com.br";
 
+// In-memory IP rate limit (per edge instance): 20 PIX charges / hour / IP.
+// Complements the per-user DB rate limit (pix_rate_limit) to slow scripted abuse
+// from a single origin using many freshly-registered accounts.
+const IP_RATE_WINDOW_MS = 60 * 60 * 1000;
+const IP_RATE_MAX = 20;
+const ipRateMap = new Map<string, { count: number; resetAt: number }>();
+function checkIpRate(ip: string): boolean {
+  const now = Date.now();
+  const entry = ipRateMap.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipRateMap.set(ip, { count: 1, resetAt: now + IP_RATE_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= IP_RATE_MAX) return false;
+  entry.count++;
+  return true;
+}
+
+
 async function getSyncPayToken(): Promise<string> {
   const clientId = Deno.env.get("SYNCPAY_CLIENT_ID")!;
   const clientSecret = Deno.env.get("SYNCPAY_CLIENT_SECRET")!;
@@ -62,6 +81,18 @@ Deno.serve(async (req) => {
     const fanId = claimsData.claims.sub;
     const fanEmail = claimsData.claims.email as string;
 
+    // IP-based rate limit (per edge instance)
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    if (!checkIpRate(clientIp)) {
+      return new Response(
+        JSON.stringify({ error: "Muitas requisições deste IP. Tente novamente em alguns minutos." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Service-role client (used for rate limit + pending insert)
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -104,9 +135,12 @@ Deno.serve(async (req) => {
     const syncpayToken = await getSyncPayToken();
     console.log("SyncPay token obtained (first 20 chars):", syncpayToken?.substring(0, 20));
 
-    // Build webhook URL
+    // Build webhook URL — append shared secret so the webhook can authenticate.
     const projectId = Deno.env.get("SUPABASE_URL")!.split(".")[0].split("//")[1];
-    const webhookUrl = `https://${projectId}.supabase.co/functions/v1/syncpay-webhook`;
+    const webhookSecret = Deno.env.get("SYNCPAY_WEBHOOK_SECRET") ?? "";
+    const webhookUrl = webhookSecret
+      ? `https://${projectId}.supabase.co/functions/v1/syncpay-webhook?secret=${encodeURIComponent(webhookSecret)}`
+      : `https://${projectId}.supabase.co/functions/v1/syncpay-webhook`;
 
     // Generate Pix charge
     // SyncPay expects amount in BRL (float), NOT cents

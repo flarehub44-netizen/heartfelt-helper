@@ -15,6 +15,27 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Validate shared webhook secret. SyncPay is configured to include it as
+    // either a query string (?secret=...) or an "x-webhook-secret" header.
+    const expectedSecret = Deno.env.get("SYNCPAY_WEBHOOK_SECRET");
+    if (expectedSecret) {
+      const url = new URL(req.url);
+      const provided =
+        req.headers.get("x-webhook-secret") ??
+        req.headers.get("x-syncpay-secret") ??
+        url.searchParams.get("secret") ??
+        "";
+      if (provided !== expectedSecret) {
+        console.warn("Rejected webhook: invalid secret");
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      console.warn("SYNCPAY_WEBHOOK_SECRET not set — webhook is unauthenticated!");
+    }
+
     const payload = await req.json();
     console.log("SyncPay webhook payload:", JSON.stringify(payload));
 
@@ -68,11 +89,15 @@ Deno.serve(async (req) => {
       .split(".")[0]
       .split("//")[1];
 
+    const internalSecret = Deno.env.get("INTERNAL_FN_SECRET") ?? "";
     async function notifyUser(userId: string, subject: string, body: string, template: string) {
       try {
         await fetch(`https://${projectId}.supabase.co/functions/v1/send-notification`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "x-internal-secret": internalSecret,
+          },
           body: JSON.stringify({ user_id: userId, subject, body, template }),
         });
       } catch (e) {
