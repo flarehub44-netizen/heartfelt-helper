@@ -20,16 +20,31 @@ export function useLiveNow() {
     queryKey: ["liveNow"],
     refetchInterval: 60_000,
     queryFn: async (): Promise<LiveNowItem[]> => {
-      const { data, error } = await supabase
+      const { data: lives, error } = await supabase
         .from("creator_lives_public")
-        .select(
-          "id, creator_id, title, thumbnail_url, min_plan, creator:profiles!creator_lives_creator_id_fkey(id, name, handle, avatar_url)"
-        )
+        .select("id, creator_id, title, thumbnail_url, min_plan, created_at")
         .eq("status", "live")
         .order("created_at", { ascending: false })
         .limit(12);
       if (error) throw error;
-      return (data ?? []) as unknown as LiveNowItem[];
+      const rows = lives ?? [];
+      if (rows.length === 0) return [];
+
+      const creatorIds = [...new Set(rows.map((r) => r.creator_id).filter(Boolean) as string[])];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name, handle, avatar_url")
+        .in("id", creatorIds);
+      const byId = new Map((profiles ?? []).map((p) => [p.id, p]));
+
+      return rows.map((r) => ({
+        id: r.id as string,
+        creator_id: r.creator_id as string,
+        title: (r.title as string) ?? "Ao vivo",
+        thumbnail_url: r.thumbnail_url,
+        min_plan: (r.min_plan as string) ?? "free",
+        creator: byId.get(r.creator_id as string) ?? null,
+      }));
     },
   });
 }
