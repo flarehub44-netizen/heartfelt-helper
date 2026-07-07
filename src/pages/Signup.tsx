@@ -200,7 +200,12 @@ const Signup = () => {
 
           <p className="text-center text-sm text-muted-foreground">
             Já tem conta?{" "}
-            <Link to="/login" className="text-primary hover:underline font-medium">Entrar</Link>
+            <Link
+              to={returnTo ? `/login?returnTo=${encodeURIComponent(returnTo)}` : "/login"}
+              className="text-primary hover:underline font-medium"
+            >
+              Entrar
+            </Link>
           </p>
         </div>
       </div>
