@@ -6,6 +6,7 @@ import PostSkeleton from "@/components/PostSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/Navbar";
 import { RenewalBanner } from "@/components/RenewalBanner";
+import LiveNowBanner from "@/components/LiveNowBanner";
 import { Compass } from "lucide-react";
 import { usePosts } from "@/hooks/usePosts";
 import { useCreators } from "@/hooks/useCreators";
