@@ -142,21 +142,42 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
 
           <div className="flex flex-col gap-1.5">
             <Label className="flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-              Acesso mínimo
+              {visibility === "public" ? (
+                <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              Visibilidade
             </Label>
-            <Select value={minPlan} onValueChange={setMinPlan}>
+            <Select value={visibility} onValueChange={(v) => setVisibility(v as "public" | "private")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="free">🌐 Todos (gratuito)</SelectItem>
-                <SelectItem value="fan">💖 Fã</SelectItem>
-                <SelectItem value="superfan">🔥 Super Fã</SelectItem>
-                <SelectItem value="vip">💎 VIP</SelectItem>
+                <SelectItem value="public">🌐 Pública — qualquer pessoa pode assistir</SelectItem>
+                <SelectItem value="private">🔒 Privada — apenas assinantes</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {visibility === "private" && (
+            <div className="flex flex-col gap-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                Plano mínimo
+              </Label>
+              <Select value={minPlan} onValueChange={setMinPlan}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fan">💖 Fã</SelectItem>
+                  <SelectItem value="superfan">🔥 Super Fã</SelectItem>
+                  <SelectItem value="vip">💎 VIP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
