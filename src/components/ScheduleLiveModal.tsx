@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calendar, Video, Lock } from "lucide-react";
+import { Calendar, Video, Lock, Globe } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,14 +21,16 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
   const [description, setDescription] = useState("");
   const [scheduledAt, setScheduledAt] = useState("");
   const [status, setStatus] = useState<"scheduled" | "live">("live");
-  const [minPlan, setMinPlan] = useState("free");
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [minPlan, setMinPlan] = useState("fan");
 
   const reset = () => {
     setTitle("");
     setDescription("");
     setScheduledAt("");
     setStatus("live");
-    setMinPlan("free");
+    setVisibility("public");
+    setMinPlan("fan");
   };
 
   const handleSubmit = async () => {
@@ -47,7 +49,7 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
       stream_url: "native",
       scheduled_at: scheduledAt || undefined,
       status,
-      min_plan: minPlan,
+      min_plan: visibility === "public" ? "free" : minPlan,
     };
 
     try {
@@ -140,21 +142,42 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
 
           <div className="flex flex-col gap-1.5">
             <Label className="flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5 text-muted-foreground" />
-              Acesso mínimo
+              {visibility === "public" ? (
+                <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              Visibilidade
             </Label>
-            <Select value={minPlan} onValueChange={setMinPlan}>
+            <Select value={visibility} onValueChange={(v) => setVisibility(v as "public" | "private")}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="free">🌐 Todos (gratuito)</SelectItem>
-                <SelectItem value="fan">💖 Fã</SelectItem>
-                <SelectItem value="superfan">🔥 Super Fã</SelectItem>
-                <SelectItem value="vip">💎 VIP</SelectItem>
+                <SelectItem value="public">🌐 Pública — qualquer pessoa pode assistir</SelectItem>
+                <SelectItem value="private">🔒 Privada — apenas assinantes</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {visibility === "private" && (
+            <div className="flex flex-col gap-1.5">
+              <Label className="flex items-center gap-1.5">
+                <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                Plano mínimo
+              </Label>
+              <Select value={minPlan} onValueChange={setMinPlan}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fan">💖 Fã</SelectItem>
+                  <SelectItem value="superfan">🔥 Super Fã</SelectItem>
+                  <SelectItem value="vip">💎 VIP</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2">
