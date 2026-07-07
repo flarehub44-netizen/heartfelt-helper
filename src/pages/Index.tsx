@@ -215,7 +215,7 @@ const Index = () => {
                   "Suporte em português",
                   "Sem conta internacional",
                   "Regras claras, sem banimento",
-                  "Marca d'água anti-vazamento",
+                  "Marca d'água automática no upload",
                 ].map((i) => (
                   <li key={i} className="flex items-start gap-2 text-foreground">
                     <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
