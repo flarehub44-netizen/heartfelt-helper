@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Radio } from "lucide-react";
 import { useLiveNow } from "@/hooks/useLiveNow";
 import { avatarUrl } from "@/lib/imageTransform";
+import { creatorLivePath } from "@/lib/creatorPaths";
 
 export default function LiveNowBanner() {
   const { data = [], isLoading } = useLiveNow();
@@ -12,7 +13,7 @@ export default function LiveNowBanner() {
       <div className="flex items-center gap-2 mb-3">
         <span className="relative flex h-2.5 w-2.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary" />
+          <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
         </span>
         <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
           <Radio className="h-4 w-4 text-primary" />
@@ -24,7 +25,7 @@ export default function LiveNowBanner() {
         {data.map((live) => (
           <Link
             key={live.id}
-            to={`/creator/${live.creator_id}`}
+            to={creatorLivePath(live.creator_id, live.id, live.creator?.handle)}
             className="flex flex-col items-center gap-1.5 flex-shrink-0 group"
           >
             <div className="relative">

@@ -107,21 +107,31 @@ const Index = () => {
             Sem bloqueio de conta, sem intermediário gringo, com suporte em português.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-4">
             <Link
               to="/signup?role=creator"
               className="flex items-center gap-2 rounded-full bg-gradient-primary px-8 py-4 text-base font-bold text-primary-foreground shadow-glow transition-all duration-300 hover:scale-105 hover:shadow-[0_8px_30px_hsl(340_80%_58%_/_0.5)]"
             >
-              Começar a ganhar agora
+              Sou criadora — começar a ganhar
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               to="/discover"
               className="flex items-center gap-2 rounded-full border border-border/60 bg-card/50 backdrop-blur-sm px-8 py-4 text-base font-semibold text-foreground transition-all duration-300 hover:border-primary/40 hover:bg-card/80"
             >
-              Ver criadoras
+              Sou fã — explorar criadores
             </Link>
           </div>
+          <p className="text-center text-sm text-muted-foreground mb-16">
+            Já tem conta?{" "}
+            <Link to="/login" className="text-primary hover:underline font-medium">
+              Entrar
+            </Link>
+            {" · "}
+            <Link to="/signup" className="text-primary hover:underline font-medium">
+              Criar conta de fã
+            </Link>
+          </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
             {stats.map((s) => (

@@ -35,6 +35,9 @@ export default function UnlockPostButton({ postId, price, onUnlocked }: Props) {
         <p className="text-sm text-center text-muted-foreground">
           Você tem <strong className="text-yellow-400">{balance} 🪙</strong>, precisa de <strong>{price} 🪙</strong>
         </p>
+        <p className="text-[11px] text-center text-muted-foreground">
+          Pagamento em moedas da carteira — não é Pix.
+        </p>
         <Link to="/wallet">
           <Button className="w-full">Comprar moedas</Button>
         </Link>
@@ -54,8 +57,13 @@ export default function UnlockPostButton({ postId, price, onUnlocked }: Props) {
   };
 
   return (
-    <Button onClick={handleUnlock} disabled={loading} className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Lock className="h-4 w-4 mr-2" />Desbloquear por {price} 🪙</>}
-    </Button>
+    <div className="space-y-2">
+      <p className="text-[11px] text-center text-muted-foreground">
+        Desbloqueio com moedas da carteira (não é Pix).
+      </p>
+      <Button onClick={handleUnlock} disabled={loading} className="w-full bg-yellow-500 hover:bg-yellow-600 text-black">
+        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Lock className="h-4 w-4 mr-2" />Desbloquear por {price} 🪙</>}
+      </Button>
+    </div>
   );
 }

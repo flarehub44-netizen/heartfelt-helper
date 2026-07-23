@@ -603,6 +603,7 @@ export type Database = {
           fan_id: string
           id: string
           plan_name: string
+          reminded_at: string | null
         }
         Insert: {
           amount: number
@@ -611,6 +612,7 @@ export type Database = {
           fan_id: string
           id?: string
           plan_name: string
+          reminded_at?: string | null
         }
         Update: {
           amount?: number
@@ -619,6 +621,7 @@ export type Database = {
           fan_id?: string
           id?: string
           plan_name?: string
+          reminded_at?: string | null
         }
         Relationships: [
           {
@@ -706,6 +709,39 @@ export type Database = {
           key?: string
           updated_at?: string
           value?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -915,6 +951,7 @@ export type Database = {
           media_url: string | null
           min_plan: string
           ppv_price: number | null
+          scheduled_at: string | null
           text: string | null
           views_count: number
         }
@@ -927,6 +964,7 @@ export type Database = {
           media_url?: string | null
           min_plan?: string
           ppv_price?: number | null
+          scheduled_at?: string | null
           text?: string | null
           views_count?: number
         }
@@ -939,6 +977,7 @@ export type Database = {
           media_url?: string | null
           min_plan?: string
           ppv_price?: number | null
+          scheduled_at?: string | null
           text?: string | null
           views_count?: number
         }
@@ -960,6 +999,7 @@ export type Database = {
           bio: string | null
           category: string | null
           cover_url: string | null
+          cpf: string | null
           created_at: string
           handle: string | null
           id: string
@@ -975,6 +1015,7 @@ export type Database = {
           bio?: string | null
           category?: string | null
           cover_url?: string | null
+          cpf?: string | null
           created_at?: string
           handle?: string | null
           id: string
@@ -990,6 +1031,7 @@ export type Database = {
           bio?: string | null
           category?: string | null
           cover_url?: string | null
+          cpf?: string | null
           created_at?: string
           handle?: string | null
           id?: string
@@ -1224,6 +1266,7 @@ export type Database = {
           p_limit?: number
           p_offset?: number
           p_search?: string
+          p_sort?: string
         }
         Returns: {
           avatar_url: string
@@ -1313,6 +1356,10 @@ export type Database = {
           p_fan_id: string
           p_plan_name: string
         }
+        Returns: undefined
+      }
+      resolve_pending_checkout: {
+        Args: { p_creator_id: string }
         Returns: undefined
       }
       send_live_gift: {

@@ -41,7 +41,11 @@ export function useCreatorProfile(creatorId: string | undefined, user?: User | n
         .eq("creator_id", creatorId!)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      const now = Date.now();
+      return (data ?? []).filter((p) => {
+        const scheduled = (p as { scheduled_at?: string | null }).scheduled_at;
+        return !scheduled || new Date(scheduled).getTime() <= now;
+      });
     },
   });
 

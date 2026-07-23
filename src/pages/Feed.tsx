@@ -1,12 +1,15 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useFollow } from "@/hooks/useFollow";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Heart, MessageCircle, Share2, Lock, MoreHorizontal, Bookmark, Send, Loader2, Flame, Copy, User } from "lucide-react";
 import PostSkeleton from "@/components/PostSkeleton";
 import { Skeleton } from "@/components/ui/skeleton";
 import Navbar from "@/components/Navbar";
 import { RenewalBanner } from "@/components/RenewalBanner";
+import { PendingCheckoutBanner } from "@/components/PendingCheckoutBanner";
 import LiveNowBanner from "@/components/LiveNowBanner";
+import NextActionCard from "@/components/NextActionCard";
 import { Compass } from "lucide-react";
 import { usePosts } from "@/hooks/usePosts";
 import { useCreators } from "@/hooks/useCreators";
@@ -16,6 +19,8 @@ import { useMySubscriptionMap } from "@/hooks/useMySubscriptions";
 import { useMyFollows } from "@/hooks/useMyFollows";
 import { planMeetsMin, PLAN_LABELS, getCheapestPlanForMin } from "@/lib/plans";
 import { getLoginPath } from "@/lib/authRedirect";
+import { setCheckoutIntent, subscribePath } from "@/lib/checkoutIntent";
+import { creatorProfilePath, creatorAbsoluteUrl } from "@/lib/creatorPaths";
 import { useComments } from "@/hooks/useComments";
 import { PixPaymentModal } from "@/components/PixPaymentModal";
 import { formatDistanceToNow } from "date-fns";
@@ -166,11 +171,11 @@ function CommentSection({ postId }: { postId: string }) {
 }
 
 // Follow button per suggestion item (needs its own component for hook rules)
-function SuggestionItem({ creator }: { creator: { id: string | number; name: string; avatar_url?: string | null; avatar?: string; category?: string | null } }) {
+function SuggestionItem({ creator }: { creator: { id: string | number; name: string; handle?: string | null; avatar_url?: string | null; avatar?: string; category?: string | null } }) {
   const { isFollowing, toggle, isPending } = useFollow(String(creator.id));
   return (
     <div className="flex items-center justify-between gap-2">
-      <Link to={`/creator/${creator.id}`} className="flex items-center gap-2 min-w-0">
+      <Link to={creatorProfilePath(String(creator.id), creator.handle)} className="flex items-center gap-2 min-w-0">
         <img src={creator.avatar_url || (creator as any).avatar || "/placeholder.svg"} alt={creator.name} className="h-9 w-9 rounded-full object-cover flex-shrink-0"  loading="lazy" decoding="async" />
         <div className="min-w-0">
           <p className="text-sm font-medium text-foreground truncate">{creator.name}</p>
@@ -231,18 +236,42 @@ const Feed = () => {
     });
   }, [realPosts, prefCategories]);
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const mySubscriptionMap = useMySubscriptionMap();
   const myFollows = useMyFollows();
   const [feedTab, setFeedTab] = useState<"following" | "discover">("following");
   const [localLikes, setLocalLikes] = useState<Set<string>>(new Set());
   const [openComments, setOpenComments] = useState<Set<string>>(new Set());
+  const [tabSeeded, setTabSeeded] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [pixModal, setPixModal] = useState<PixModalState | null>(null);
   const { bookmarkedIds } = useBookmarks();
   const toggleBookmark = useToggleBookmark();
 
-  const stories = realCreators?.slice(0, 6) ?? [];
-  const suggestions = realCreators?.slice(0, 5) ?? [];
+  const stories = useMemo(() => {
+    const list = realCreators ?? [];
+    if (!prefCategories.length) return list.slice(0, 6);
+    return [...list]
+      .sort((a, b) => {
+        const aMatch = prefCategories.includes(a.category ?? "") ? 1 : 0;
+        const bMatch = prefCategories.includes(b.category ?? "") ? 1 : 0;
+        return bMatch - aMatch;
+      })
+      .slice(0, 6);
+  }, [realCreators, prefCategories]);
+
+  const suggestions = useMemo(() => {
+    const list = realCreators ?? [];
+    if (!prefCategories.length) return list.slice(0, 5);
+    return [...list]
+      .sort((a, b) => {
+        const aMatch = prefCategories.includes(a.category ?? "") ? 1 : 0;
+        const bMatch = prefCategories.includes(b.category ?? "") ? 1 : 0;
+        return bMatch - aMatch;
+      })
+      .slice(0, 5);
+  }, [realCreators, prefCategories]);
 
   // Tab filtering: "Seguindo" = creators the user follows OR subscribes to.
   const followingIds = useMemo(() => {
@@ -250,6 +279,15 @@ const Feed = () => {
     mySubscriptionMap.forEach((_, k) => ids.add(k));
     return ids;
   }, [myFollows, mySubscriptionMap]);
+
+  // New fans with zero follows land on Discover by default
+  useEffect(() => {
+    if (tabSeeded || !user) return;
+    if (followingIds.size === 0) {
+      setFeedTab("discover");
+    }
+    setTabSeeded(true);
+  }, [user, followingIds.size, tabSeeded]);
 
   const visiblePosts = useMemo(() => {
     if (!user) return sortedPosts;
@@ -306,7 +344,18 @@ const Feed = () => {
                   p_message: null,
                 });
                 if (error) {
-                  toast.error(error.message.includes("saldo") ? "Saldo insuficiente — recarregue a carteira" : error.message);
+                  const lowBalance =
+                    /saldo|insufficient/i.test(error.message);
+                  if (lowBalance) {
+                    toast.error("Saldo insuficiente", {
+                      action: {
+                        label: "Recarregar",
+                        onClick: () => navigate("/wallet#packages"),
+                      },
+                    });
+                  } else {
+                    toast.error(error.message);
+                  }
                 } else {
                   toast.success(`Enviou ${TIP} 🪙 para ${post.creator.name}!`);
                 }
@@ -327,12 +376,16 @@ const Feed = () => {
   };
 
   const handleSubscribeFromPost = (post: typeof feedPosts[number] & { min_plan?: string }) => {
+    const minPlan = post.min_plan ?? "fan";
+    const handle = post.creator.handle;
     if (!user) {
-      window.location.href = getLoginPath(`/creator/${post.creator.id}?openSubscribe=1`);
+      setCheckoutIntent({ creatorId: String(post.creator.id), handle, plan: minPlan });
+      window.location.href = getLoginPath(
+        subscribePath(String(post.creator.id), { handle, plan: minPlan })
+      );
       return;
     }
     const creatorPlans = plansByCreator[post.creator.id] ?? [];
-    const minPlan = post.min_plan ?? "fan";
     const plan =
       getCheapestPlanForMin(creatorPlans, minPlan) ??
       creatorPlans[0];
@@ -349,8 +402,10 @@ const Feed = () => {
       <Navbar />
       <div className="container max-w-6xl pt-24 pb-24 md:pb-16 flex gap-8">
         <div className="flex-1 min-w-0 flex flex-col gap-6">
+          <PendingCheckoutBanner />
           <RenewalBanner />
           <LiveNowBanner />
+          {user && profile?.role !== "creator" && <NextActionCard compact />}
           <div className="glass-card rounded-2xl p-4">
             <div className="flex gap-4 overflow-x-auto pb-1 scrollbar-hide">
               {creatorsLoading
@@ -361,7 +416,7 @@ const Feed = () => {
                     </div>
                   ))
                 : stories.map((creator) => (
-                    <Link key={creator.id} to={`/creator/${creator.id}`} className="flex flex-col items-center gap-2 flex-shrink-0">
+                    <Link key={creator.id} to={creatorProfilePath(String(creator.id), creator.handle)} className="flex flex-col items-center gap-2 flex-shrink-0">
                       <div className="relative">
                         <div className="h-16 w-16 rounded-full p-0.5 bg-gradient-primary shadow-glow">
                           <img
@@ -380,7 +435,7 @@ const Feed = () => {
           {/* Mobile suggestions */}
           <div className="flex lg:hidden gap-3 overflow-x-auto pb-1 scrollbar-hide">
             {suggestions.map((creator) => (
-              <Link key={creator.id} to={`/creator/${creator.id}`} className="flex items-center gap-2 flex-shrink-0 glass-card rounded-xl px-3 py-2">
+              <Link key={creator.id} to={creatorProfilePath(String(creator.id), creator.handle)} className="flex items-center gap-2 flex-shrink-0 glass-card rounded-xl px-3 py-2">
                 <img
                   src={(creator as any).avatar_url || (creator as any).avatar || "/placeholder.svg"}
                   alt={creator.name}
@@ -464,27 +519,59 @@ const Feed = () => {
                 <div className="glass-card rounded-2xl p-5">
                   <p className="text-sm font-semibold text-foreground mb-4">
                     {feedTab === "following" && user
-                      ? "Comece seguindo alguém"
+                      ? "Comece seguindo ou assinando"
                       : "Criadores em destaque"}
                   </p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {(realCreators ?? []).slice(0, 6).map((creator) => (
-                      <Link
-                        key={creator.id}
-                        to={`/creator/${creator.id}`}
-                        className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/10 p-3 hover:border-primary/40 transition-colors group"
-                      >
-                        <img
-                          src={(creator as any).avatar_url || (creator as any).avatar || "/placeholder.svg"}
-                          alt={creator.name}
-                          className="h-10 w-10 rounded-full object-cover flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
-                         loading="lazy" decoding="async" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-foreground truncate">{creator.name}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{(creator as any).category ?? "Criador"}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {(realCreators ?? []).slice(0, 3).map((creator) => {
+                      const price = Number(creator.price) || 0;
+                      const path = subscribePath(String(creator.id), { handle: creator.handle });
+                      return (
+                        <div
+                          key={creator.id}
+                          className="flex flex-col gap-3 rounded-xl border border-border/50 bg-muted/10 p-4"
+                        >
+                          <Link
+                            to={creatorProfilePath(String(creator.id), creator.handle)}
+                            className="flex items-center gap-3 group"
+                          >
+                            <img
+                              src={
+                                (creator as { avatar_url?: string }).avatar_url ||
+                                (creator as { avatar?: string }).avatar ||
+                                "/placeholder.svg"
+                              }
+                              alt={creator.name}
+                              className="h-12 w-12 rounded-full object-cover flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all"
+                              loading="lazy"
+                              decoding="async"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-foreground truncate">
+                                {creator.name}
+                              </p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {(creator as { category?: string | null }).category ?? "Criador"}
+                              </p>
+                            </div>
+                          </Link>
+                          <Link
+                            to={path}
+                            onClick={() =>
+                              setCheckoutIntent({
+                                creatorId: String(creator.id),
+                                handle: creator.handle,
+                              })
+                            }
+                            className="w-full text-center rounded-full bg-gradient-primary px-3 py-2 text-xs font-bold text-primary-foreground shadow-glow hover:scale-[1.02] transition-transform"
+                          >
+                            {price > 0
+                              ? `Assinar a partir de R$ ${price.toFixed(2).replace(".", ",")}`
+                              : "Assinar agora"}
+                          </Link>
                         </div>
-                      </Link>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -494,7 +581,7 @@ const Feed = () => {
               {!post.locked && <PostViewTracker postId={post.id} />}
               <div className="flex items-center justify-between p-4">
 
-                <Link to={`/creator/${post.creator.id}`} className="flex items-center gap-3">
+                <Link to={creatorProfilePath(String(post.creator.id), post.creator.handle)} className="flex items-center gap-3">
                   <img src={post.creator.avatar} alt={post.creator.name} className="h-10 w-10 rounded-full object-cover ring-2 ring-primary/30"  loading="lazy" decoding="async" />
                   <div>
                     <p className="text-sm font-semibold text-foreground">{post.creator.name}</p>
@@ -514,7 +601,7 @@ const Feed = () => {
                       onMouseLeave={() => setOpenMenu(null)}
                     >
                       <Link
-                        to={`/creator/${post.creator.id}`}
+                        to={creatorProfilePath(String(post.creator.id), post.creator.handle)}
                         onClick={() => setOpenMenu(null)}
                         className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 transition-colors"
                       >
@@ -523,7 +610,9 @@ const Feed = () => {
                       </Link>
                       <button
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}/creator/${post.creator.id}`);
+                          navigator.clipboard.writeText(
+                            creatorAbsoluteUrl(window.location.origin, String(post.creator.id), post.creator.handle)
+                          );
                           toast.success("Link copiado!");
                           setOpenMenu(null);
                         }}
@@ -621,7 +710,11 @@ const Feed = () => {
                   </button>
                   <button
                     onClick={() => {
-                      const url = `${window.location.origin}/creator/${post.creator.id}`;
+                      const url = creatorAbsoluteUrl(
+                        window.location.origin,
+                        String(post.creator.id),
+                        post.creator.handle
+                      );
                       if (navigator.share) {
                         navigator.share({ title: `${post.creator.name} na Flare`, url });
                       } else {
@@ -693,7 +786,10 @@ const Feed = () => {
         <PixPaymentModal
           open={!!pixModal}
           onClose={() => setPixModal(null)}
-          onSuccess={() => setPixModal(null)}
+          onSuccess={() => {
+            setPixModal(null);
+            void queryClient.invalidateQueries({ queryKey: ["pending-checkouts"] });
+          }}
           creatorId={pixModal.creatorId}
           creatorName={pixModal.creatorName}
           planName={pixModal.planName}

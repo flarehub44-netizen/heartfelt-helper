@@ -7,12 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = searchParams.get("returnTo");
@@ -20,14 +22,15 @@ const Login = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!loading && user) {
-      if (profile) {
-        const fanOnboarded = localStorage.getItem("fan_onboarded") === "true";
-        navigate(getPostAuthPath(returnTo, profile.role, fanOnboarded, profile.approved), { replace: true });
-      } else {
-        navigate("/onboarding", { replace: true });
-      }
-    }
+    if (loading || !user) return;
+    if (!profile) return;
+    const fanOnboarded =
+      profile.fan_onboarded === true ||
+      localStorage.getItem("fan_onboarded") === "true";
+    navigate(
+      getPostAuthPath(returnTo, profile.role, fanOnboarded, profile.approved),
+      { replace: true }
+    );
   }, [user, profile, loading, navigate, returnTo]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -43,7 +46,33 @@ const Login = () => {
         variant: "destructive",
       });
     }
-    // Navigation happens via onAuthStateChange -> profile fetch -> redirect above
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      toast({
+        title: "Informe seu e-mail",
+        description: "Digite o e-mail da conta para receber o link de redefinição.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setResetSending(true);
+    const redirectTo = `${window.location.origin}/login`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo });
+    setResetSending(false);
+    if (error) {
+      toast({
+        title: "Não foi possível enviar",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "E-mail enviado",
+      description: "Se existir uma conta com esse e-mail, você receberá o link para redefinir a senha.",
+    });
   };
 
   return (
@@ -86,8 +115,13 @@ const Login = () => {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Senha</Label>
-                <button type="button" className="text-xs text-primary hover:underline">
-                  Esqueceu a senha?
+                <button
+                  type="button"
+                  onClick={() => void handleForgotPassword()}
+                  disabled={resetSending}
+                  className="text-xs text-primary hover:underline disabled:opacity-50"
+                >
+                  {resetSending ? "Enviando..." : "Esqueceu a senha?"}
                 </button>
               </div>
               <div className="relative">

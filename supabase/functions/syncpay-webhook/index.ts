@@ -8,6 +8,7 @@ const corsHeaders = {
 
 // Statuses that mean the payment was confirmed and money received
 const PAID_STATUSES = ["completed", "COMPLETED", "PAID_OUT", "paid", "PAID", "approved", "APPROVED"];
+const FAILED_STATUSES = ["failed", "FAILED", "refunded", "REFUNDED", "cancelled", "CANCELLED", "canceled", "CANCELED", "med", "MED"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,14 +43,13 @@ Deno.serve(async (req) => {
     // SyncPay sends { data: { status, idtransaction, ... } }
     const data = payload.data ?? payload;
     const status = data.status ?? payload.status;
-    const identifier = data.idtransaction ?? data.identifier ?? data.id ?? payload.identifier;
-
-    if (!PAID_STATUSES.includes(status)) {
-      console.log(`Ignoring status: ${status}`);
-      return new Response(JSON.stringify({ ok: true, ignored: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const identifier =
+      data.idtransaction ??
+      data.identifier ??
+      data.reference_id ??
+      data.id ??
+      payload.identifier ??
+      payload.reference_id;
 
     if (!identifier) {
       console.error("No identifier in webhook payload");
@@ -73,6 +73,47 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (pendingErr || !pending) {
+      // Cash-out / creator withdrawal path
+      const { data: withdrawal } = await supabase
+        .from("withdrawals")
+        .select("id, status, creator_id")
+        .eq("syncpay_id", identifier)
+        .maybeSingle();
+
+      if (withdrawal) {
+        let mapped = "processing";
+        if (PAID_STATUSES.includes(status)) mapped = "completed";
+        else if (FAILED_STATUSES.includes(status)) mapped = "failed";
+        else if (String(status).toLowerCase() === "pending") mapped = "pending";
+
+        const { error: finErr } = await supabase.rpc("finalize_withdrawal", {
+          p_status: mapped,
+          p_failure_reason: mapped === "failed" ? `syncpay:${status}` : null,
+          p_withdrawal_id: null,
+          p_syncpay_id: identifier,
+        });
+
+        if (finErr) {
+          console.error("finalize_withdrawal error:", finErr);
+          return new Response(JSON.stringify({ error: finErr.message }), {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        console.log(`Withdrawal ${withdrawal.id} finalized as ${mapped}`);
+        return new Response(JSON.stringify({ ok: true, withdrawal: true, status: mapped }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!PAID_STATUSES.includes(status)) {
+        console.log(`Ignoring status (no pending/withdrawal): ${status}`);
+        return new Response(JSON.stringify({ ok: true, ignored: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       console.error("Pending payment not found for identifier:", identifier, pendingErr);
       return new Response(
         JSON.stringify({ error: "Pending payment not found", identifier }),
@@ -83,25 +124,43 @@ Deno.serve(async (req) => {
       );
     }
 
+    if (!PAID_STATUSES.includes(status)) {
+      console.log(`Ignoring cash-in status: ${status}`);
+      return new Response(JSON.stringify({ ok: true, ignored: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { fan_id: fanId, creator_id: creatorId, plan, amount, affiliate_ref: affiliateRef } = pending;
+
 
     const projectId = Deno.env.get("SUPABASE_URL")!
       .split(".")[0]
       .split("//")[1];
 
     const internalSecret = Deno.env.get("INTERNAL_FN_SECRET") ?? "";
-    async function notifyUser(userId: string, subject: string, body: string, template: string) {
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    async function notifyUser(userId: string, title: string, body: string, type: string, pushUrl?: string) {
       try {
-        await fetch(`https://${projectId}.supabase.co/functions/v1/send-notification`, {
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${serviceKey}`,
+          apikey: serviceKey,
+        };
+        if (internalSecret) headers["x-internal-secret"] = internalSecret;
+        await fetch(`https://${projectId}.supabase.co/functions/v1/send-push`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-internal-secret": internalSecret,
-          },
-          body: JSON.stringify({ user_id: userId, subject, body, template }),
+          headers,
+          body: JSON.stringify({
+            user_id: userId,
+            title,
+            body,
+            type,
+            url: pushUrl,
+          }),
         });
       } catch (e) {
-        console.error("send-notification error (non-fatal):", e);
+        console.error("send-push error (non-fatal):", e);
       }
     }
 
@@ -185,6 +244,20 @@ Deno.serve(async (req) => {
 
       await supabase.from("pending_payments").delete().eq("syncpay_id", identifier);
 
+      try {
+        await supabase.rpc("credit_creator_earning", {
+          p_creator_id: creatorId,
+          p_source_type: "tip",
+          p_gross: amount,
+          p_ref_type: "syncpay",
+          p_ref_id: identifier,
+          p_description: "Gorjeta Pix",
+          p_fee_rate: 0.20,
+        });
+      } catch (earnErr) {
+        console.error("credit_creator_earning tip error (non-fatal):", earnErr);
+      }
+
       await notifyUser(
         fanId,
         "Gorjeta enviada com sucesso",
@@ -253,6 +326,21 @@ Deno.serve(async (req) => {
       .from("pending_payments")
       .delete()
       .eq("syncpay_id", identifier);
+
+    // Credit creator BRL ledger (80% after platform fee)
+    try {
+      await supabase.rpc("credit_creator_earning", {
+        p_creator_id: creatorId,
+        p_source_type: "subscription",
+        p_gross: amount,
+        p_ref_type: "syncpay",
+        p_ref_id: identifier,
+        p_description: `Assinatura ${plan}`,
+        p_fee_rate: 0.20,
+      });
+    } catch (earnErr) {
+      console.error("credit_creator_earning subscription error (non-fatal):", earnErr);
+    }
 
     // Register affiliate referral if applicable
     if (affiliateRef && newSub) {

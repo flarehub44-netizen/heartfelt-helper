@@ -62,7 +62,7 @@ const Bookmarks = () => {
               <div
                 key={post.id}
                 className="glass-card rounded-2xl overflow-hidden flex gap-0 group cursor-pointer hover:border-primary/30 transition-colors"
-                onClick={() => post.creator && navigate(`/creator/${post.creator.id}`)}
+                onClick={() => navigate(`/p/${post.id}`)}
               >
                 {/* Thumbnail */}
                 <div className="w-24 h-24 flex-shrink-0 bg-muted/30 relative overflow-hidden">

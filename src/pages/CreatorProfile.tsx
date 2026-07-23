@@ -22,7 +22,9 @@ import { Button } from "@/components/ui/button";
 import { useAffiliateLinks } from "@/hooks/useAffiliateLinks";
 import { useMyAffiliateRequest, useCreateAffiliateRequest } from "@/hooks/useAffiliateRequests";
 import { useCreatorPixel } from "@/hooks/useCreatorPixel";
-import { getLoginPath } from "@/lib/authRedirect";
+import { getLoginPath, getSignupPath } from "@/lib/authRedirect";
+import { setCheckoutIntent, peekCheckoutIntent, clearCheckoutIntent, subscribePath } from "@/lib/checkoutIntent";
+import { creatorProfilePath, creatorAbsoluteUrl, creatorLivePath } from "@/lib/creatorPaths";
 import { normalizePlanName, PLAN_LABELS, PLAN_BADGES, PLAN_ORDER, planRank, getUpgradePriceDiff } from "@/lib/plans";
 import { trackConversion } from "@/lib/conversionEvents";
 import { useMeta } from "@/hooks/useMeta";
@@ -30,6 +32,7 @@ import { useCreatorLives, useManageLives } from "@/hooks/useCreatorLives";
 import { ScheduleLiveModal } from "@/components/ScheduleLiveModal";
 import { LiveChat } from "@/components/LiveChat";
 import { NativeLivePlayer } from "@/components/NativeLivePlayer";
+import { LiveGiftOverlay } from "@/components/LiveGiftOverlay";
 import { SignedImage } from "@/components/SignedMedia";
 import { useSimilarCreators } from "@/hooks/useSimilarCreators";
 
@@ -63,8 +66,14 @@ const defaultPlans = [
 
 const postTypes = ["Todos", "Fotos", "Vídeos", "Lives"];
 
-const CreatorProfile = () => {
-  const { id } = useParams();
+type CreatorProfileProps = {
+  /** When rendered from /u/:handle, pass the resolved UUID. */
+  creatorIdOverride?: string;
+};
+
+const CreatorProfile = ({ creatorIdOverride }: CreatorProfileProps) => {
+  const { id: paramId } = useParams();
+  const id = creatorIdOverride ?? paramId;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
@@ -91,6 +100,17 @@ const CreatorProfile = () => {
     }
   }, [searchParams]);
 
+  // Focus a specific live when ?live= is present
+  useEffect(() => {
+    const liveFocus = searchParams.get("live");
+    if (liveFocus) {
+      setActiveTab("Lives");
+      window.setTimeout(() => {
+        document.getElementById(`live-${liveFocus}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 400);
+    }
+  }, [searchParams]);
+
 
 
   // Capture ref code from URL
@@ -108,7 +128,7 @@ const CreatorProfile = () => {
   const createAffiliateRequest = useCreateAffiliateRequest();
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/creator/${id}`;
+    const url = creatorAbsoluteUrl(window.location.origin, id!, realProfile?.handle);
     const shareData = { title: realProfile.name, text: `Conheça ${realProfile.name} na Flare!`, url };
     if (navigator.share && navigator.canShare?.(shareData)) {
       try { await navigator.share(shareData); } catch { /* cancelled */ }
@@ -147,16 +167,17 @@ const CreatorProfile = () => {
     }
 
     // approved — generate/copy link
-    const existing = affiliateLinks.find((l: any) => l.creator_id === id);
+    const existing = affiliateLinks.find((l: { creator_id: string }) => l.creator_id === id);
+    const basePath = creatorProfilePath(id!, realProfile?.handle);
     if (existing) {
-      const url = `${window.location.origin}/creator/${id}?ref=${existing.code}`;
+      const url = `${window.location.origin}${basePath}?ref=${existing.code}`;
       navigator.clipboard.writeText(url);
       toast.success("Link de afiliado copiado!");
       return;
     }
     try {
       const newLink = await createAffiliateLink.mutateAsync(id!);
-      const url = `${window.location.origin}/creator/${id}?ref=${newLink.code}`;
+      const url = `${window.location.origin}${basePath}?ref=${newLink.code}`;
       navigator.clipboard.writeText(url);
       toast.success("Link de afiliado gerado e copiado!");
     } catch {
@@ -246,7 +267,9 @@ const CreatorProfile = () => {
         ? `Assine ${realProfile.name} na Flare e acesse conteúdo exclusivo.`
         : undefined,
     image: realProfile?.avatar_url ?? undefined,
-    url: `${window.location.origin}/creator/${id}`,
+    url: realProfile
+      ? creatorAbsoluteUrl(window.location.origin, id!, realProfile.handle)
+      : `${window.location.origin}/creator/${id}`,
   });
 
   // Lives
@@ -254,26 +277,37 @@ const CreatorProfile = () => {
   const { remove: removeLive, update: updateLive } = useManageLives(isOwner ? id : undefined);
 
   // Auto-open PIX modal when redirected with ?openSubscribe=1 (optionally ?plan=<key>)
+  // or when a checkout intent exists for this creator after auth.
   // Must be declared before any early return (React rules of hooks)
   useEffect(() => {
+    if (!user || authLoading || !realProfile || !id) return;
+
     const open = searchParams.get("openSubscribe");
     const planKey = searchParams.get("plan");
-    if (open === "1" && user && !authLoading && realProfile) {
-      if (planKey) {
-        const idx = realPlans.findIndex((p) => p.plan_name === planKey);
+    const intent = peekCheckoutIntent();
+    const intentMatches = intent?.creatorId === id;
+
+    if (open === "1" || intentMatches) {
+      const planFromQuery = planKey || (intentMatches ? intent?.plan : undefined);
+      if (planFromQuery) {
+        const idx = realPlans.findIndex((p) => p.plan_name === planFromQuery);
         if (idx >= 0) setSelectedPlan(idx);
       }
       setPixModalOpen(true);
-      const next = new URLSearchParams(searchParams);
-      next.delete("openSubscribe");
-      next.delete("plan");
-      navigate(
-        `/creator/${id}${next.toString() ? `?${next.toString()}` : ""}`,
-        { replace: true }
-      );
+      if (intentMatches) clearCheckoutIntent();
+      if (open === "1") {
+        const next = new URLSearchParams(searchParams);
+        next.delete("openSubscribe");
+        next.delete("plan");
+        const base = creatorProfilePath(id!, realProfile.handle);
+        navigate(
+          `${base}${next.toString() ? `?${next.toString()}` : ""}`,
+          { replace: true }
+        );
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, user, authLoading, realProfile]);
+  }, [searchParams, user, authLoading, realProfile, id]);
 
   // If no real profile found, show 404
   if (!realProfile) {
@@ -356,7 +390,9 @@ const CreatorProfile = () => {
 
   const handleLockedPostClick = (minPlan: string) => {
     if (!user) {
-      navigate(getLoginPath(`/creator/${id}?openSubscribe=1`));
+      const path = subscribePath(id!, { handle: realProfile?.handle, plan: minPlan });
+      setCheckoutIntent({ creatorId: id!, handle: realProfile?.handle, plan: minPlan });
+      navigate(getLoginPath(path));
       return;
     }
     if (!hasAccessTo(minPlan)) {
@@ -414,8 +450,17 @@ const CreatorProfile = () => {
   };
 
   const handleSubscribe = () => {
+    const planIdx = isSubscribed && effectiveUpgradeIndex >= 0 ? effectiveUpgradeIndex : selectedPlan;
+    const planKey = plans[planIdx]?.planKey;
     if (!user) {
-      navigate(getLoginPath(`/creator/${id}?openSubscribe=1`));
+      const path = subscribePath(id!, { handle: realProfile?.handle, plan: planKey });
+      setCheckoutIntent({
+        creatorId: id!,
+        handle: realProfile?.handle,
+        plan: planKey,
+        amount: plans[planIdx]?.price,
+      });
+      navigate(getLoginPath(path));
       return;
     }
     if (isSubscribed) {
@@ -426,7 +471,6 @@ const CreatorProfile = () => {
         return;
       }
     }
-    const planIdx = isSubscribed && effectiveUpgradeIndex >= 0 ? effectiveUpgradeIndex : selectedPlan;
     sendMetaEvent({
       event_name: "InitiateCheckout",
       user_email: user.email,
@@ -443,7 +487,7 @@ const CreatorProfile = () => {
 
   const handleMessage = () => {
     if (!user) {
-      navigate(getLoginPath(`/creator/${id}`));
+      navigate(getLoginPath(creatorProfilePath(id!, realProfile?.handle)));
       return;
     }
     if (!canMessage) {
@@ -643,6 +687,7 @@ const CreatorProfile = () => {
                     return (
                       <div
                         key={live.id}
+                        id={`live-${live.id}`}
                         className={`rounded-2xl border overflow-hidden ${isLive ? "border-red-500/40" : "border-border/50"}`}
                       >
                         {/* Header */}
@@ -717,12 +762,34 @@ const CreatorProfile = () => {
                         {isLive && (
                           canView ? (
                             <div>
+                              <div className="flex items-center justify-between px-3 py-2 bg-muted/20 border-t border-border/30">
+                                <Link
+                                  to={creatorLivePath(id, live.id, realProfile?.handle)}
+                                  className="text-xs text-primary hover:underline font-medium"
+                                >
+                                  Abrir página da live →
+                                </Link>
+                                <button
+                                  type="button"
+                                  className="text-xs text-muted-foreground hover:text-foreground"
+                                  onClick={() => {
+                                    const url = `${window.location.origin}${creatorLivePath(id, live.id, realProfile?.handle)}`;
+                                    void navigator.clipboard.writeText(url);
+                                    toast.success("Link copiado!");
+                                  }}
+                                >
+                                  Copiar link
+                                </button>
+                              </div>
                               {isNative ? (
-                                <NativeLivePlayer
-                                  liveId={live.id}
-                                  isHost={isOwner}
-                                  onEnd={isOwner ? () => updateLive.mutate({ id: live.id, status: "ended" }) : undefined}
-                                />
+                                <div className="relative">
+                                  <NativeLivePlayer
+                                    liveId={live.id}
+                                    isHost={isOwner}
+                                    onEnd={isOwner ? () => updateLive.mutate({ id: live.id, status: "ended" }) : undefined}
+                                  />
+                                  <LiveGiftOverlay liveId={live.id} />
+                                </div>
                               ) : (
                                 <div className="flex flex-col items-center gap-2 py-8 bg-muted/20 text-center">
                                   <Radio className="h-8 w-8 text-red-400 animate-pulse" />
@@ -739,7 +806,13 @@ const CreatorProfile = () => {
                                   )}
                                 </div>
                               )}
-                              <LiveChat liveId={live.id} className="rounded-none border-x-0 border-b-0 border-t border-border/40" />
+                              <LiveChat
+                                liveId={live.id}
+                                creatorId={id}
+                                creatorName={creator.name}
+                                isHost={isOwner}
+                                className="rounded-none border-x-0 border-b-0 border-t border-border/40"
+                              />
                             </div>
                           ) : (
                             <div className="flex flex-col items-center gap-3 py-10 bg-muted/20 text-center">
@@ -758,6 +831,31 @@ const CreatorProfile = () => {
                               </button>
                             </div>
                           )
+                        )}
+                        {isEnded && isOwner && (
+                          <div className="px-4 py-3 border-t border-border/40 flex items-center justify-between gap-3 bg-muted/10">
+                            <p className="text-xs text-muted-foreground">
+                              Peak {(live as { peak_viewers?: number }).peak_viewers ?? 0} viewers ·{" "}
+                              {(live as { gifts_total_coins?: number }).gifts_total_coins ?? 0} moedas em gifts
+                            </p>
+                            <button
+                              type="button"
+                              className="text-xs font-semibold text-primary hover:underline"
+                              onClick={async () => {
+                                const { data, error } = await supabase.rpc("convert_live_gifts_to_brl" as never, {
+                                  p_live_id: live.id,
+                                } as never);
+                                if (error) toast.error(error.message);
+                                else {
+                                  toast.success(
+                                    `R$ ${Number(data ?? 0).toFixed(2)} creditados no saldo (após taxa de 20%)`,
+                                  );
+                                }
+                              }}
+                            >
+                              Converter gifts → Pix
+                            </button>
+                          </div>
                         )}
                       </div>
                     );
@@ -817,8 +915,10 @@ const CreatorProfile = () => {
                         <div
                           key={post.id}
                           onClick={() => {
+                            const path = subscribePath(id!, { handle: realProfile?.handle });
+                            setCheckoutIntent({ creatorId: id!, handle: realProfile?.handle });
                             toast.info("Crie uma conta para acessar conteúdo exclusivo");
-                            navigate("/signup");
+                            navigate(getSignupPath(path));
                           }}
                           className="group relative aspect-square rounded-xl overflow-hidden bg-muted border border-border/40 cursor-pointer"
                         >
@@ -856,12 +956,17 @@ const CreatorProfile = () => {
                           </p>
                         </div>
                         <Link
-                          to="/signup"
+                          to={getSignupPath(subscribePath(id!, { handle: realProfile?.handle }))}
+                          onClick={() => setCheckoutIntent({ creatorId: id!, handle: realProfile?.handle })}
                           className="rounded-full bg-gradient-primary px-6 py-2.5 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
                         >
                           Cadastrar agora
                         </Link>
-                        <Link to="/login" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                        <Link
+                          to={getLoginPath(subscribePath(id!, { handle: realProfile?.handle }))}
+                          onClick={() => setCheckoutIntent({ creatorId: id!, handle: realProfile?.handle })}
+                          className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
                           Já tenho conta → Entrar
                         </Link>
                       </div>
@@ -1133,7 +1238,10 @@ const CreatorProfile = () => {
           <PixPaymentModal
             open={pixModalOpen}
             onClose={() => setPixModalOpen(false)}
-            onSuccess={() => {}}
+            onSuccess={() => {
+              clearCheckoutIntent();
+              void queryClient.invalidateQueries({ queryKey: ["pending-checkouts"] });
+            }}
             creatorId={id!}
             creatorName={creator.name}
             planName={plans[selectedPlan].planKey}
@@ -1170,7 +1278,7 @@ const CreatorProfile = () => {
             {similarCreators.map((c) => (
               <Link
                 key={c.id}
-                to={`/creator/${c.id}`}
+                to={creatorProfilePath(c.id, c.handle)}
                 className="glass-card rounded-2xl p-3 flex flex-col items-center gap-2 text-center hover:border-primary/40 transition-colors group"
               >
                 <div className="h-14 w-14 rounded-xl overflow-hidden bg-muted flex-shrink-0 ring-2 ring-transparent group-hover:ring-primary/30 transition-all">
@@ -1232,7 +1340,12 @@ const CreatorProfile = () => {
           open={scheduleLiveOpen}
           onClose={() => setScheduleLiveOpen(false)}
           creatorId={id!}
-          onCreated={() => setActiveTab("Lives")}
+          onCreated={(status, live) => {
+            setActiveTab("Lives");
+            if (status === "live" && live) {
+              navigate(creatorLivePath(id, live.id, realProfile?.handle));
+            }
+          }}
         />
 
       )}

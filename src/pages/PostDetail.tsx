@@ -8,6 +8,7 @@ import Navbar from "@/components/Navbar";
 import { supabase } from "@/integrations/supabase/client";
 import { SignedImage } from "@/components/SignedMedia";
 import { PLAN_LABELS } from "@/lib/plans";
+import { setCheckoutIntent, subscribePath } from "@/lib/checkoutIntent";
 import UnlockPostButton from "@/components/UnlockPostButton";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -173,7 +174,17 @@ const PostDetailPage = () => {
                         Exclusivo para {PLAN_LABELS[post.min_plan] ?? "assinantes"}
                       </p>
                       <Link
-                        to={`/creator/${post.creator_id}?openSubscribe=1&plan=${post.min_plan}`}
+                        to={subscribePath(post.creator_id, {
+                          handle: post.creator?.handle,
+                          plan: post.min_plan,
+                        })}
+                        onClick={() =>
+                          setCheckoutIntent({
+                            creatorId: post.creator_id,
+                            handle: post.creator?.handle,
+                            plan: post.min_plan,
+                          })
+                        }
                         className="rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
                       >
                         Desbloquear conteúdo

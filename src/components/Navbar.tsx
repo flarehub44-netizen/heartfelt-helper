@@ -2,7 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import {
   Menu, X, Flame, Search, User, LayoutDashboard, MessageCircle, Rss,
-  LogOut, UserCircle2, Settings, Compass, CreditCard, Coins,
+  LogOut, UserCircle2, Settings, Compass, CreditCard, Coins, Bookmark,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useConversations } from "@/hooks/useConversations";
@@ -63,9 +63,8 @@ const Navbar = () => {
   }, [user?.id]);
 
   const guestLinks = [
-    { label: "Início", to: "/" },
-    { label: "Feed", to: "/feed" },
-    { label: "Descobrir", to: "/discover" },
+    { label: "Para criadoras", to: "/" },
+    { label: "Explorar", to: "/discover" },
   ];
 
   const fanLinks = [
@@ -73,6 +72,7 @@ const Navbar = () => {
     { label: "Descobrir", to: "/discover" },
     { label: "Mensagens", to: "/messages" },
     { label: "Assinaturas", to: "/subscriptions" },
+    { label: "Salvos", to: "/bookmarks" },
   ];
 
   const creatorLinks = [
@@ -82,7 +82,7 @@ const Navbar = () => {
 
   const navLinks = !loggedIn ? guestLinks : isCreator ? creatorLinks : fanLinks;
 
-  const profilePath = isCreator ? `/creator/${user?.id}` : `/profile/${user?.id}`;
+  const profilePath = "/me";
 
   const handleSignOut = async () => {
     await signOut();
@@ -175,14 +175,24 @@ const Navbar = () => {
                     Meu perfil
                   </Link>
                   {!isCreator && (
-                    <Link
-                      to="/subscriptions"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-                    >
-                      <CreditCard className="h-4 w-4 text-muted-foreground" />
-                      Assinaturas
-                    </Link>
+                    <>
+                      <Link
+                        to="/subscriptions"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                      >
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                        Assinaturas
+                      </Link>
+                      <Link
+                        to="/bookmarks"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                      >
+                        <Bookmark className="h-4 w-4 text-muted-foreground" />
+                        Salvos
+                      </Link>
+                    </>
                   )}
                   <Link
                     to="/wallet"
@@ -192,16 +202,14 @@ const Navbar = () => {
                     <Coins className="h-4 w-4 text-muted-foreground" />
                     Carteira
                   </Link>
-                  {isCreator && (
-                    <Link
-                      to="/settings"
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
-                    >
-                      <Settings className="h-4 w-4 text-muted-foreground" />
-                      Configurações
-                    </Link>
-                  )}
+                  <Link
+                    to="/settings"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <Settings className="h-4 w-4 text-muted-foreground" />
+                    Configurações
+                  </Link>
                   <div className="border-t border-border/40 my-1" />
                   <button
                     onClick={handleSignOut}

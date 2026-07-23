@@ -10,9 +10,10 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import CreatorRoute from "@/components/CreatorRoute";
 import AdminRoute from "@/components/AdminRoute";
 import AgeGateModal from "@/components/AgeGateModal";
-import Index from "./pages/Index";
+import HomeEntry from "./pages/HomeEntry";
 import Discover from "./pages/Discover";
 import CreatorProfile from "./pages/CreatorProfile";
+import CreatorIdRedirect from "./pages/CreatorIdRedirect";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Feed from "./pages/Feed";
@@ -28,10 +29,12 @@ import FanOnboarding from "./pages/FanOnboarding";
 import Subscriptions from "./pages/Subscriptions";
 import Bookmarks from "./pages/Bookmarks";
 import CreatorByHandle from "./pages/CreatorByHandle";
+import CreatorLivePage from "./pages/CreatorLivePage";
 import PostDetail from "./pages/PostDetail";
 import Wallet from "./pages/Wallet";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import MeRedirect from "./pages/MeRedirect";
 import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
@@ -71,10 +74,13 @@ const App = () => {
           <AgeGateModal open={showAgeGate} onConfirm={handleConfirm} onDeny={handleDeny} />
           <BottomNav />
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<HomeEntry />} />
             <Route path="/discover" element={<Discover />} />
-            <Route path="/creator/:id" element={<CreatorProfile />} />
+            <Route path="/creator/:id" element={<CreatorIdRedirect />} />
+            <Route path="/u/:handle/live/:liveId" element={<CreatorLivePage />} />
+            <Route path="/creator/:id/live/:liveId" element={<CreatorLivePage />} />
             <Route path="/u/:handle" element={<CreatorByHandle />} />
+            <Route path="/me" element={<MeRedirect />} />
             <Route path="/p/:id" element={<PostDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
@@ -84,11 +90,11 @@ const App = () => {
             <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
             <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
             <Route path="/dashboard" element={<CreatorRoute><Dashboard /></CreatorRoute>} />
-            <Route path="/settings" element={<CreatorRoute><Settings /></CreatorRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/profile/:id" element={<FanProfile />} />
             <Route path="/onboarding" element={<CreatorRoute><Onboarding /></CreatorRoute>} />
             <Route path="/fan-onboarding" element={<ProtectedRoute><FanOnboarding /></ProtectedRoute>} />
-            <Route path="/pending-approval" element={<PendingApproval />} />
+            <Route path="/pending-approval" element={<CreatorRoute><PendingApproval /></CreatorRoute>} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path="/privacy" element={<Privacy />} />
             <Route path="/terms" element={<Terms />} />

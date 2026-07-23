@@ -37,7 +37,14 @@ export default function SendGiftButton({ liveId }: { liveId: string }) {
   const send = async (g: GiftItem) => {
     if (!user) return;
     if (balance < g.cost) {
-      toast.error("Saldo insuficiente. Compre moedas na carteira.");
+      toast.error("Saldo insuficiente", {
+        action: {
+          label: "Recarregar",
+          onClick: () => {
+            window.location.href = `/wallet#packages`;
+          },
+        },
+      });
       return;
     }
     setSending(g.id);

@@ -15,6 +15,9 @@ import { toast } from "sonner";
 import { sendMetaEvent } from "@/lib/metaCapi";
 import { SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 import { trackConversion } from "@/lib/conversionEvents";
+import { clearCheckoutIntent } from "@/lib/checkoutIntent";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface PixPaymentModalProps {
   open: boolean;
@@ -59,6 +62,8 @@ export function PixPaymentModal({
   nextPlanDiff,
   onUpgrade,
 }: PixPaymentModalProps) {
+  const { profile, refreshProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<Step>("form");
   const [fanName, setFanName] = useState("");
   const [fanCpf, setFanCpf] = useState("");
@@ -69,13 +74,19 @@ export function PixPaymentModal({
   const [secondsLeft, setSecondsLeft] = useState(1800);
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const stepRef = useRef<Step>("form");
+  const paidRef = useRef(false);
+  const abandonedRef = useRef(false);
 
-  // Reset on open
+  // Reset on open — prefill name/CPF from profile when available
   useEffect(() => {
     if (open) {
       setStep("form");
-      setFanName("");
-      setFanCpf("");
+      stepRef.current = "form";
+      paidRef.current = false;
+      abandonedRef.current = false;
+      setFanName(profile?.name?.trim() || "");
+      setFanCpf(profile?.cpf ? formatCPF(profile.cpf) : "");
       setPixCode("");
       setIdentifier("");
       setCopied(false);
@@ -86,7 +97,11 @@ export function PixPaymentModal({
       stopPolling();
       stopCountdown();
     }
-  }, [open]);
+  }, [open, profile?.name, profile?.cpf]);
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
 
   function stopPolling() {
     if (pollingRef.current) {
@@ -120,16 +135,27 @@ export function PixPaymentModal({
     return () => { stopPolling(); stopCountdown(); };
   }, []);
 
+  function recordAbandonedCheckout() {
+    if (planName === "tip" || paidRef.current || abandonedRef.current) return;
+    if (stepRef.current !== "pix") return;
+    abandonedRef.current = true;
+    void supabase
+      .rpc("record_checkout_abandoned", {
+        p_fan_id: fanId,
+        p_creator_id: creatorId,
+        p_plan_name: planName,
+        p_amount: amount,
+        p_creator_name: creatorName,
+      })
+      .then(() => {
+        void queryClient.invalidateQueries({ queryKey: ["pending-checkouts", fanId] });
+      });
+  }
+
   // Track abandoned checkout when PIX expires (fire-and-forget)
   useEffect(() => {
     if (secondsLeft !== 0 || step !== "pix" || planName === "tip") return;
-    void supabase.rpc("record_checkout_abandoned", {
-      p_fan_id: fanId,
-      p_creator_id: creatorId,
-      p_plan_name: planName,
-      p_amount: amount,
-      p_creator_name: creatorName,
-    });
+    recordAbandonedCheckout();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [secondsLeft, step]);
 
@@ -147,6 +173,7 @@ export function PixPaymentModal({
         if (data) {
           stopPolling();
           stopCountdown();
+          paidRef.current = true;
           setStep("success");
           setTimeout(() => {
             onSuccess();
@@ -167,11 +194,18 @@ export function PixPaymentModal({
       if (data) {
         stopPolling();
         stopCountdown();
+        paidRef.current = true;
         trackConversion("subscription_activated", {
           creatorId,
           metadata: { plan: planName, amount },
         });
         sessionStorage.removeItem("affiliate_ref");
+        clearCheckoutIntent();
+        try {
+          await supabase.rpc("resolve_pending_checkout", { p_creator_id: creatorId });
+        } catch {
+          // non-fatal
+        }
         sendMetaEvent({
           event_name: "Purchase",
           user_email: fanEmail,
@@ -247,6 +281,19 @@ export function PixPaymentModal({
         creatorId,
         metadata: { plan: planName, amount },
       });
+
+      // Persist CPF/name so next checkout skips retyping
+      void supabase
+        .from("profiles")
+        .update({
+          name: fanName.trim(),
+          cpf: cpfDigits,
+        })
+        .eq("id", fanId)
+        .then(() => {
+          void refreshProfile();
+        });
+
       setStep("pix");
       startPolling();
       startCountdown();
@@ -265,7 +312,10 @@ export function PixPaymentModal({
   }
 
   function handleClose() {
+    // Closing with an unpaid QR must enter recovery (banner + push), not only QR expiry
+    recordAbandonedCheckout();
     stopPolling();
+    stopCountdown();
     onClose();
   }
 
@@ -317,7 +367,7 @@ export function PixPaymentModal({
                 />
                 <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                   <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                  Exigido pelo gateway de pagamento. Não armazenamos seus dados.
+                  Exigido pelo banco para gerar o Pix — não é cobrança extra. Salvamos no seu perfil para não pedir de novo.
                 </p>
               </div>
             </div>

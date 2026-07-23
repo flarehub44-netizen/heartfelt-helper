@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWallet } from "@/hooks/useWallet";
 import Navbar from "@/components/Navbar";
+import { PendingCheckoutBanner } from "@/components/PendingCheckoutBanner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -28,6 +29,7 @@ const TX_META: Record<string, { icon: typeof Coins; label: string; color: string
   purchase:       { icon: Coins,         label: "Compra de moedas",       color: "text-green-400" },
   gift_sent:      { icon: Gift,          label: "Presente enviado",       color: "text-red-400" },
   gift_received:  { icon: Gift,          label: "Presente recebido",      color: "text-green-400" },
+  gift_converted: { icon: ArrowUpRight,  label: "Gifts convertidos → Pix", color: "text-muted-foreground" },
   tip_sent:       { icon: Heart,         label: "Gorjeta enviada",        color: "text-red-400" },
   tip_received:   { icon: Heart,         label: "Gorjeta recebida",       color: "text-green-400" },
   ppv_spent:      { icon: Lock,          label: "Conteúdo desbloqueado",  color: "text-red-400" },
@@ -108,6 +110,9 @@ export default function Wallet() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="container max-w-3xl pt-24 pb-32 px-4">
+        <div className="mb-4">
+          <PendingCheckoutBanner />
+        </div>
         {/* Balance card */}
         <section className="rounded-3xl border border-border/50 bg-gradient-primary p-8 shadow-glow text-primary-foreground">
           <p className="text-sm opacity-80">Seu saldo</p>

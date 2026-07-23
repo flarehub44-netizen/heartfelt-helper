@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  DollarSign, Users, FileImage, TrendingUp, Upload, Bell, Settings,
+  DollarSign, Users, FileImage, TrendingUp, Upload, Settings,
   ArrowUpRight, ArrowDownRight, Plus, Eye, X, BarChart3, Repeat2,
-  Video, Calendar, Trash2, Heart, CheckCircle2, Circle
+  Video, Calendar, Trash2, Heart, CheckCircle2, Circle, Coins
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,11 @@ import { usePostStats } from "@/hooks/usePostStats";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useCreatorPayouts } from "@/hooks/useCreatorPayouts";
+import { useCreatorConversionStats, useCreatorRenewalPipeline } from "@/hooks/useCreatorGrowth";
+import { creatorProfilePath, creatorLivePath } from "@/lib/creatorPaths";
+import { Input } from "@/components/ui/input";
+import NotificationBell from "@/components/NotificationBell";
 
 const planColors: Record<string, string> = {
   "Fã": "bg-muted/50 text-muted-foreground",
@@ -42,24 +47,54 @@ const Dashboard = () => {
   const [uploadHover, setUploadHover] = useState(false);
   const [postText, setPostText] = useState("");
   const [minPlan, setMinPlan] = useState("free");
+  const [ppvPrice, setPpvPrice] = useState("");
+  const [scheduledAt, setScheduledAt] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [liveModalOpen, setLiveModalOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchParams.get("live") === "1" || searchParams.get("action") === "live") {
+      setLiveModalOpen(true);
+      const next = new URLSearchParams(searchParams);
+      next.delete("live");
+      next.delete("action");
+      setSearchParams(next, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const { data: lives = [] } = useCreatorLives(user?.id);
   const { data: postStats = [] } = usePostStats();
   const { data: completion } = useProfileCompletion();
   const { remove: removeLive, update: updateLive } = useManageLives(user?.id);
+  const { balance, eligibility, requestPayout, convertibleCoins, convertCoins } = useCreatorPayouts();
+  const [dashWithdrawAmount, setDashWithdrawAmount] = useState("");
+  const { data: conversion } = useCreatorConversionStats();
+  const { data: renewalFans = [], notify: notifyRenewal, notifyAll } = useCreatorRenewalPipeline();
 
   const upcomingLives = lives.filter((l) => l.status !== "ended");
   const endedLives = lives.filter((l) => l.status === "ended");
+  const expiringFans = renewalFans.filter((f) => f.bucket === "expiring_7d");
+  const expiredFans = renewalFans.filter((f) => f.bucket === "expired_30d");
+  const winbackCount = expiringFans.length + expiredFans.length;
+  const convertibleCoinBalance = convertibleCoins.data ?? 0;
 
   const displayName = profile?.name || "Criador";
+
+  // MoM revenue change from last two chart points
+  const momPct = (() => {
+    if (!revenueData || revenueData.length < 2) return null;
+    const prev = Number(revenueData[revenueData.length - 2]?.value ?? 0);
+    const curr = Number(revenueData[revenueData.length - 1]?.value ?? 0);
+    if (prev <= 0) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 100);
+  })();
 
   const recentSubscribers = dashStats?.recentSubscribers ?? [];
   const planBreakdown = dashStats?.planBreakdown ?? {};
@@ -146,18 +181,23 @@ const Dashboard = () => {
           console.warn("watermark failed, keeping original", wmErr);
         }
       }
+      const ppv = parseInt(ppvPrice, 10);
       const { error: postError } = await supabase.from("posts").insert({
         creator_id: user.id,
         text: postText || null,
         media_url: path,
         media_type: mediaType,
         min_plan: minPlan,
-      });
+        ppv_price: Number.isFinite(ppv) && ppv > 0 ? ppv : 0,
+        scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+      } as never);
       if (postError) throw postError;
 
-      toast.success("Conteúdo publicado com sucesso!");
+      toast.success(scheduledAt ? "Post agendado com sucesso!" : "Conteúdo publicado com sucesso!");
       setPostText("");
       setMinPlan("free");
+      setPpvPrice("");
+      setScheduledAt("");
       closePreview();
     } catch (err: any) {
       toast.error(err.message || "Erro ao publicar");
@@ -186,15 +226,113 @@ const Dashboard = () => {
               <Video className="h-3.5 w-3.5" />
               Iniciar Live
             </Button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground hover:text-foreground transition-colors">
-              <Bell className="h-4 w-4" />
-            </button>
+            <NotificationBell />
             <Link to="/settings">
               <button className="flex h-9 w-9 items-center justify-center rounded-full border border-border/60 text-muted-foreground hover:text-foreground transition-colors">
                 <Settings className="h-4 w-4" />
               </button>
             </Link>
           </div>
+        </div>
+
+        {/* Primary work CTAs */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => document.getElementById("publish-section")?.scrollIntoView({ behavior: "smooth" })}
+            className="glass-card rounded-2xl p-4 text-left hover:border-primary/40 border border-transparent transition-colors"
+          >
+            <p className="text-xs text-muted-foreground">Ação</p>
+            <p className="font-semibold text-foreground flex items-center gap-2 mt-1">
+              <Upload className="h-4 w-4 text-primary" /> Publicar
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">Poste com PPV ou agende</p>
+          </button>
+          <div className="glass-card rounded-2xl p-4 border border-transparent hover:border-primary/40 transition-colors sm:col-span-1">
+            <p className="text-xs text-muted-foreground">Saldo</p>
+            <p className="font-semibold text-foreground flex items-center gap-2 mt-1">
+              <DollarSign className="h-4 w-4 text-green-400" /> Sacar
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              R$ {(eligibility.data?.eligible_brl ?? balance.data?.available_brl ?? 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })} elegível
+            </p>
+            <div className="mt-3 flex gap-2 items-center">
+              <Input
+                type="number"
+                min={30}
+                step="0.01"
+                placeholder="Mín. 30"
+                className="h-8 text-sm bg-muted/20 border-border/50"
+                value={dashWithdrawAmount}
+                onChange={(e) => setDashWithdrawAmount(e.target.value)}
+              />
+              <Button
+                size="sm"
+                className="h-8 rounded-full shrink-0"
+                disabled={requestPayout.isPending}
+                onClick={async () => {
+                  const amt = parseFloat(dashWithdrawAmount.replace(",", "."));
+                  if (!amt || amt < 30) {
+                    toast.error("Mínimo R$ 30");
+                    return;
+                  }
+                  try {
+                    await requestPayout.mutateAsync(amt);
+                    toast.success("Saque enviado ao Pix");
+                    setDashWithdrawAmount("");
+                  } catch (err: unknown) {
+                    toast.error(err instanceof Error ? err.message : "Erro no saque");
+                  }
+                }}
+              >
+                Pix
+              </Button>
+            </div>
+            <Link to="/settings?tab=payments" className="text-[11px] text-primary hover:underline mt-2 inline-block">
+              CPF, Pix e histórico →
+            </Link>
+            {convertibleCoinBalance > 0 && (
+              <div className="mt-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5">
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <Coins className="h-3 w-3 text-amber-400" />
+                  {convertibleCoinBalance} moedas de gifts/tips/PPV prontas para Pix
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 mt-2 w-full text-xs"
+                  disabled={convertCoins.isPending}
+                  onClick={async () => {
+                    try {
+                      const net = await convertCoins.mutateAsync();
+                      toast.success(
+                        net > 0
+                          ? `Convertido! +R$ ${net.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} líquido`
+                          : "Nada a converter"
+                      );
+                    } catch (err: unknown) {
+                      toast.error(err instanceof Error ? err.message : "Falha na conversão");
+                    }
+                  }}
+                >
+                  Converter moedas → Pix
+                </Button>
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => document.getElementById("winback-section")?.scrollIntoView({ behavior: "smooth" })}
+            className="glass-card rounded-2xl p-4 text-left hover:border-primary/40 border border-transparent transition-colors"
+          >
+            <p className="text-xs text-muted-foreground">Retenção</p>
+            <p className="font-semibold text-foreground flex items-center gap-2 mt-1">
+              <Users className="h-4 w-4 text-amber-400" /> Recuperar assinantes
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {winbackCount} precisam de atenção
+            </p>
+          </button>
         </div>
 
         {/* Profile completion widget — hidden when 100% done */}
@@ -273,7 +411,11 @@ const Dashboard = () => {
               </div>
               <div className="flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5">
                 <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                <span className="text-xs font-semibold text-primary">+18% este mês</span>
+                <span className="text-xs font-semibold text-primary">
+                  {momPct == null
+                    ? "—"
+                    : `${momPct >= 0 ? "+" : ""}${momPct}% este mês`}
+                </span>
               </div>
             </div>
             <ResponsiveContainer width="100%" height={220}>
@@ -375,7 +517,7 @@ const Dashboard = () => {
         </div>
 
         {/* Lives section */}
-        <div className="glass-card rounded-2xl p-6">
+        <div id="lives-section" className="glass-card rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Video className="h-4 w-4 text-primary" />
@@ -534,8 +676,146 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* Conversion analytics */}
+        {conversion && (conversion.profile_views > 0 || conversion.activations > 0) && (
+          <div className="glass-card rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold text-foreground">Conversão (30 dias)</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border border-border/50 bg-muted/10 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Views perfil</p>
+                <p className="text-lg font-bold text-foreground">{conversion.profile_views}</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-muted/10 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Cliques assinar</p>
+                <p className="text-lg font-bold text-foreground">{conversion.subscribe_clicks}</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-muted/10 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Ativações</p>
+                <p className="text-lg font-bold text-foreground">{conversion.activations}</p>
+              </div>
+              <div className="rounded-xl border border-border/50 bg-muted/10 p-3 text-center">
+                <p className="text-xs text-muted-foreground">Taxa</p>
+                <p className="text-lg font-bold text-primary">{conversion.conversion_rate}%</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Win-back CRM */}
+        <div id="winback-section" className="glass-card rounded-2xl p-6">
+          <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Repeat2 className="h-4 w-4 text-primary" />
+              <h2 className="font-semibold text-foreground">Recuperar assinantes</h2>
+            </div>
+            {winbackCount > 0 && (
+              <Button
+                size="sm"
+                className="h-8 rounded-full bg-gradient-primary text-primary-foreground text-xs"
+                disabled={notifyAll.isPending}
+                onClick={async () => {
+                  try {
+                    const { ok, failed } = await notifyAll.mutateAsync({
+                      fans: [...expiringFans, ...expiredFans],
+                      message:
+                        "Sua assinatura precisa de atenção — renove com um toque e continue acompanhando!",
+                    });
+                    if (ok > 0) toast.success(`Avisos enviados: ${ok}`);
+                    if (failed > 0) toast.error(`${failed} avisos falharam`);
+                  } catch {
+                    toast.error("Não foi possível avisar todos");
+                  }
+                }}
+              >
+                Avisar todos ({winbackCount})
+              </Button>
+            )}
+          </div>
+          {expiringFans.length === 0 && expiredFans.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">
+              Nenhuma assinatura expirando ou expirada nos últimos 30 dias.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {expiringFans.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-amber-400 mb-2">Expiram em até 7 dias</p>
+                  <div className="flex flex-col gap-2">
+                    {expiringFans.slice(0, 8).map((f) => (
+                      <div key={`${f.fan_id}-${f.expires_at}`} className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/10 px-3 py-2">
+                        <img src={f.fan_avatar || "/placeholder.svg"} alt="" className="h-8 w-8 rounded-full object-cover" loading="lazy" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{f.fan_name || "Fã"}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {f.plan} · até {format(new Date(f.expires_at), "d MMM", { locale: ptBR })}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={notifyRenewal.isPending}
+                          onClick={async () => {
+                            try {
+                              await notifyRenewal.mutateAsync({ fanId: f.fan_id });
+                              toast.success("Aviso enviado!");
+                            } catch {
+                              toast.error("Não foi possível avisar");
+                            }
+                          }}
+                        >
+                          Avisar
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {expiredFans.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-red-400 mb-2">Expirados (30 dias)</p>
+                  <div className="flex flex-col gap-2">
+                    {expiredFans.slice(0, 8).map((f) => (
+                      <div key={`${f.fan_id}-exp-${f.expires_at}`} className="flex items-center gap-3 rounded-xl border border-border/50 bg-muted/10 px-3 py-2">
+                        <img src={f.fan_avatar || "/placeholder.svg"} alt="" className="h-8 w-8 rounded-full object-cover" loading="lazy" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{f.fan_name || "Fã"}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {f.plan} · expirou {format(new Date(f.expires_at), "d MMM", { locale: ptBR })}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs bg-gradient-primary text-primary-foreground"
+                          disabled={notifyRenewal.isPending}
+                          onClick={async () => {
+                            try {
+                              await notifyRenewal.mutateAsync({
+                                fanId: f.fan_id,
+                                message: "Sentimos sua falta! Volte com um clique e continue acompanhando.",
+                              });
+                              toast.success("Convite de retorno enviado!");
+                            } catch {
+                              toast.error("Não foi possível avisar");
+                            }
+                          }}
+                        >
+                          Win-back
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Upload new content */}
-        <div className="glass-card rounded-2xl p-6">
+        <div id="publish-section" className="glass-card rounded-2xl p-6">
           <h2 className="font-semibold text-foreground mb-4">Publicar novo conteúdo</h2>
           <div className="flex flex-col sm:flex-row gap-4 mb-4">
             <Textarea
@@ -544,19 +824,41 @@ const Dashboard = () => {
               value={postText}
               onChange={(e) => setPostText(e.target.value)}
             />
-            <div className="flex flex-col gap-2 sm:w-48">
-              <Label className="text-sm text-muted-foreground">Acesso mínimo</Label>
-              <Select value={minPlan} onValueChange={setMinPlan}>
-                <SelectTrigger className="bg-muted/20 border-border/50">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="free">🌐 Todos (gratuito)</SelectItem>
-                  <SelectItem value="fan">💖 Fã</SelectItem>
-                  <SelectItem value="superfan">🔥 Super Fã</SelectItem>
-                  <SelectItem value="vip">💎 VIP</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col gap-3 sm:w-52">
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm text-muted-foreground">Acesso mínimo</Label>
+                <Select value={minPlan} onValueChange={setMinPlan}>
+                  <SelectTrigger className="bg-muted/20 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="free">🌐 Todos (gratuito)</SelectItem>
+                    <SelectItem value="fan">💖 Fã</SelectItem>
+                    <SelectItem value="superfan">🔥 Super Fã</SelectItem>
+                    <SelectItem value="vip">💎 VIP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm text-muted-foreground">PPV (moedas)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  placeholder="0 = sem PPV"
+                  className="bg-muted/20 border-border/50"
+                  value={ppvPrice}
+                  onChange={(e) => setPpvPrice(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label className="text-sm text-muted-foreground">Agendar (opcional)</Label>
+                <Input
+                  type="datetime-local"
+                  className="bg-muted/20 border-border/50"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                />
+              </div>
             </div>
           </div>
           <input ref={fileRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
@@ -592,7 +894,13 @@ const Dashboard = () => {
           open={liveModalOpen}
           onClose={() => setLiveModalOpen(false)}
           creatorId={user.id}
-          onCreated={() => navigate(`/creator/${user.id}?tab=Lives`)}
+          onCreated={(status, live) => {
+            if (status === "live" && live) {
+              navigate(creatorLivePath(user.id, live.id, profile?.handle));
+            } else {
+              navigate(creatorProfilePath(user.id, profile?.handle, { tab: "Lives" }));
+            }
+          }}
         />
       )}
 
@@ -620,11 +928,21 @@ const Dashboard = () => {
                 {postText || <span className="text-muted-foreground italic">Sem legenda</span>}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="text-xs text-muted-foreground">Acesso mínimo:</span>
               <span className="text-xs font-semibold text-primary bg-primary/10 rounded-full px-2 py-0.5">
                 {minPlan === "free" ? "🌐 Todos" : minPlan === "fan" ? "💖 Fã" : minPlan === "superfan" ? "🔥 Super Fã" : "💎 VIP"}
               </span>
+              {ppvPrice && Number(ppvPrice) > 0 && (
+                <span className="text-xs font-semibold text-amber-400 bg-amber-500/10 rounded-full px-2 py-0.5">
+                  PPV {ppvPrice} moedas
+                </span>
+              )}
+              {scheduledAt && (
+                <span className="text-xs font-semibold text-blue-400 bg-blue-500/10 rounded-full px-2 py-0.5">
+                  Agendado
+                </span>
+              )}
             </div>
           </div>
           <DialogFooter className="gap-2">
@@ -637,7 +955,7 @@ const Dashboard = () => {
               disabled={uploading}
               className="bg-gradient-primary text-primary-foreground shadow-glow hover:scale-[1.02] transition-transform gap-2"
             >
-              {uploading ? "Publicando..." : "Publicar agora →"}
+              {uploading ? "Publicando..." : scheduledAt ? "Agendar →" : "Publicar agora →"}
             </Button>
           </DialogFooter>
         </DialogContent>

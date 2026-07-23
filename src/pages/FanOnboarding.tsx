@@ -41,7 +41,7 @@ function FollowableCreator({ creator }: { creator: { id: string | number; name: 
 
 const FanOnboarding = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const [step, setStep] = useState(0);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [claiming, setClaiming] = useState(false);
@@ -57,6 +57,13 @@ const FanOnboarding = () => {
   const suggestedCreators = (creators ?? []).filter(
     (c) => selectedCategories.length === 0 || selectedCategories.includes(c.category ?? "")
   ).slice(0, 5);
+
+  const markOnboarded = async () => {
+    if (!user) return;
+    localStorage.setItem("fan_onboarded", "true");
+    await supabase.from("profiles").update({ fan_onboarded: true } as never).eq("id", user.id);
+    await refreshProfile();
+  };
 
   const savePreferences = async () => {
     if (!user) return;
@@ -86,7 +93,7 @@ const FanOnboarding = () => {
       if (amount > 0) {
         toast.success(`+${amount} moedas creditadas na sua carteira!`);
       }
-      localStorage.setItem("fan_onboarded", "true");
+      await markOnboarded();
       setTimeout(() => navigate("/feed"), 900);
     } catch (e) {
       console.error(e);
@@ -97,7 +104,7 @@ const FanOnboarding = () => {
 
   const skipAll = async () => {
     await savePreferences();
-    localStorage.setItem("fan_onboarded", "true");
+    await markOnboarded();
     navigate("/feed");
   };
 

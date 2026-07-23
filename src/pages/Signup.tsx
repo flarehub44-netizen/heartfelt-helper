@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { getPostAuthPath } from "@/lib/authRedirect";
+import { peekCheckoutIntent } from "@/lib/checkoutIntent";
 import { Flame, Eye, EyeOff, Mail, Lock, User, AtSign, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +26,9 @@ const Signup = () => {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      const fanOnboarded = localStorage.getItem("fan_onboarded") === "true";
+      const fanOnboarded =
+        profile.fan_onboarded === true ||
+        localStorage.getItem("fan_onboarded") === "true";
       navigate(getPostAuthPath(returnTo, profile.role, fanOnboarded, profile.approved), { replace: true });
     }
   }, [user, profile, loading, navigate, returnTo]);
@@ -69,10 +72,16 @@ const Signup = () => {
     } else {
       sendMetaEvent({ event_name: "CompleteRegistration", user_email: form.email });
       toast({ title: "Conta criada com sucesso!" });
-      if (returnTo && role === "fan") {
-        navigate(returnTo, { replace: true });
+      if (role === "creator") {
+        navigate("/onboarding", { replace: true });
+        return;
+      }
+      // Intent / returnTo beat fan-onboarding so Assinar → Pix is not interrupted
+      const intent = peekCheckoutIntent();
+      if (intent || returnTo) {
+        navigate(getPostAuthPath(returnTo, "fan", false, true, intent), { replace: true });
       } else {
-        navigate(role === "creator" ? "/onboarding" : "/fan-onboarding");
+        navigate("/fan-onboarding", { replace: true });
       }
     }
   };

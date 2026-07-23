@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { CommandDialog, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { User, FileText, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { creatorProfilePath } from "@/lib/creatorPaths";
 
 interface SearchDialogProps {
   open: boolean;
@@ -22,6 +23,7 @@ interface PostResult {
   text: string | null;
   creator_id: string;
   creator_name: string;
+  creator_handle: string | null;
 }
 
 const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
@@ -49,7 +51,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
         .limit(5),
       supabase
         .from("posts")
-        .select("id, text, creator_id, creator:profiles!posts_creator_id_fkey(name)")
+        .select("id, text, creator_id, creator:profiles!posts_creator_id_fkey(name, handle)")
         .ilike("text", term)
         .eq("min_plan", "free")
         .limit(5),
@@ -62,6 +64,7 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
         text: p.text,
         creator_id: p.creator_id,
         creator_name: p.creator?.name ?? "",
+        creator_handle: p.creator?.handle ?? null,
       }))
     );
     setLoading(false);
@@ -102,7 +105,11 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
         {creators.length > 0 && (
           <CommandGroup heading="Criadores">
             {creators.map((c) => (
-              <CommandItem key={c.id} onSelect={() => go(`/creator/${c.id}`)} className="cursor-pointer">
+              <CommandItem
+                key={c.id}
+                onSelect={() => go(creatorProfilePath(c.id, c.handle))}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
                   {c.avatar_url ? (
                     <img src={c.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover"  loading="lazy" decoding="async" />
@@ -124,7 +131,11 @@ const SearchDialog = ({ open, onOpenChange }: SearchDialogProps) => {
         {posts.length > 0 && (
           <CommandGroup heading="Posts">
             {posts.map((p) => (
-              <CommandItem key={p.id} onSelect={() => go(`/creator/${p.creator_id}`)} className="cursor-pointer">
+              <CommandItem
+                key={p.id}
+                onSelect={() => go(`/p/${p.id}`)}
+                className="cursor-pointer"
+              >
                 <div className="flex items-center gap-3">
                   <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <div className="min-w-0">

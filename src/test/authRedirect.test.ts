@@ -1,5 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { getLoginPath, getPostAuthPath, isSafeReturnPath } from "@/lib/authRedirect";
+import { describe, it, expect, beforeEach } from "vitest";
+import { getLoginPath, getSignupPath, getPostAuthPath, isSafeReturnPath } from "@/lib/authRedirect";
+import { clearCheckoutIntent, setCheckoutIntent } from "@/lib/checkoutIntent";
 
 describe("getLoginPath", () => {
   it("returns plain login without returnTo", () => {
@@ -19,9 +20,34 @@ describe("getLoginPath", () => {
   });
 });
 
+describe("getSignupPath", () => {
+  it("encodes returnTo", () => {
+    expect(getSignupPath("/creator/1?openSubscribe=1")).toBe(
+      "/signup?returnTo=%2Fcreator%2F1%3FopenSubscribe%3D1"
+    );
+  });
+});
+
 describe("getPostAuthPath", () => {
+  beforeEach(() => {
+    clearCheckoutIntent();
+  });
+
   it("prefers safe returnTo", () => {
     expect(getPostAuthPath("/creator/1", "fan")).toBe("/creator/1");
+  });
+
+  it("maps returnTo=/ away from creator landing for fans", () => {
+    expect(getPostAuthPath("/", "fan")).toBe("/feed");
+    expect(getPostAuthPath("/", "fan", false)).toBe("/fan-onboarding");
+  });
+
+  it("leaves returnTo=/ for approved creators (HomeEntry routes them)", () => {
+    expect(getPostAuthPath("/", "creator")).toBe("/");
+  });
+
+  it("sends unapproved creator with returnTo=/ to pending-approval", () => {
+    expect(getPostAuthPath("/", "creator", true, false)).toBe("/pending-approval");
   });
 
   it("falls back by role", () => {
@@ -42,12 +68,36 @@ describe("getPostAuthPath", () => {
     expect(getPostAuthPath(null, "creator", true, false)).toBe("/pending-approval");
   });
 
-  it("returnTo takes precedence over approval status", () => {
-    expect(getPostAuthPath("/discover", "creator", true, false)).toBe("/discover");
+  it("blocks unapproved creator returnTo outside prep routes", () => {
+    expect(getPostAuthPath("/discover", "creator", true, false)).toBe("/pending-approval");
+    expect(getPostAuthPath("/dashboard", "creator", true, false)).toBe("/pending-approval");
+  });
+
+  it("allows unapproved creator returnTo for onboarding/settings/pending", () => {
+    expect(getPostAuthPath("/onboarding", "creator", true, false)).toBe("/onboarding");
+    expect(getPostAuthPath("/settings", "creator", true, false)).toBe("/settings");
+    expect(getPostAuthPath("/pending-approval", "creator", true, false)).toBe("/pending-approval");
   });
 
   it("rejects protocol-relative returnTo", () => {
     expect(getPostAuthPath("//evil.com", "fan")).toBe("/feed");
+  });
+
+  it("checkout intent wins over onboarding and returnTo", () => {
+    setCheckoutIntent({ creatorId: "c1", plan: "vip" });
+    expect(getPostAuthPath(null, "fan", false)).toBe(
+      "/creator/c1?openSubscribe=1&plan=vip"
+    );
+    expect(getPostAuthPath("/feed", "fan", false)).toBe(
+      "/creator/c1?openSubscribe=1&plan=vip"
+    );
+  });
+
+  it("checkout intent prefers handle path", () => {
+    setCheckoutIntent({ creatorId: "c1", handle: "ana", plan: "fan" });
+    expect(getPostAuthPath(null, "fan", false)).toBe(
+      "/u/ana?openSubscribe=1&plan=fan"
+    );
   });
 });
 

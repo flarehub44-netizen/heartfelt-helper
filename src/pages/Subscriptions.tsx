@@ -6,6 +6,7 @@ import { useMySubscriptionsDetail } from "@/hooks/useMySubscriptions";
 import { useMyAffiliateEarnings } from "@/hooks/useMyAffiliateEarnings";
 import { useAuth } from "@/contexts/AuthContext";
 import { PLAN_LABELS } from "@/lib/plans";
+import { creatorProfilePath } from "@/lib/creatorPaths";
 import { PixPaymentModal } from "@/components/PixPaymentModal";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -115,7 +116,7 @@ const Subscriptions = () => {
                    loading="lazy" decoding="async" />
                   <div className="flex-1 min-w-0">
                     <Link
-                      to={`/creator/${sub.creator_id}`}
+                      to={creatorProfilePath(sub.creator_id, sub.creator_handle)}
                       className="font-semibold text-foreground hover:text-primary transition-colors"
                     >
                       {sub.creator_name}
@@ -142,9 +143,11 @@ const Subscriptions = () => {
                           amount: sub.price,
                         })
                       }
-                      className="rounded-full bg-gradient-primary px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform whitespace-nowrap"
+                      className={`rounded-full px-5 py-2.5 text-sm font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform whitespace-nowrap ${
+                        expiringSoon ? "bg-amber-500 animate-pulse" : "bg-gradient-primary"
+                      }`}
                     >
-                      Renovar
+                      {expiringSoon ? "Renovar agora" : "Renovar"}
                     </button>
                     <button
                       onClick={() => setCancelConfirm({ subId: sub.id, creatorName: sub.creator_name })}

@@ -12,6 +12,12 @@ export interface CreatorLive {
   status: "scheduled" | "live" | "ended";
   min_plan: string;
   created_at: string;
+  peak_viewers?: number;
+  gifts_total_coins?: number;
+  goal_coins?: number;
+  ticket_price_coins?: number;
+  ingest_mode?: "mesh" | "sfu";
+  vod_url?: string | null;
 }
 
 export interface NewLive {
@@ -21,6 +27,9 @@ export interface NewLive {
   scheduled_at?: string;
   status?: "scheduled" | "live" | "ended";
   min_plan?: string;
+  goal_coins?: number;
+  ticket_price_coins?: number;
+  ingest_mode?: "mesh" | "sfu";
 }
 
 export function useCreatorLives(creatorId: string | undefined) {
@@ -110,6 +119,11 @@ export function useManageLives(creatorId: string | undefined) {
         });
       });
       invalidate();
+      if (createdLive.status === "live") {
+        void supabase.functions.invoke("notify-live-started", {
+          body: { live_id: createdLive.id },
+        });
+      }
     },
   });
 
@@ -145,6 +159,11 @@ export function useManageLives(creatorId: string | undefined) {
         }),
       );
       invalidate();
+      if (updatedLive.status === "live") {
+        void supabase.functions.invoke("notify-live-started", {
+          body: { live_id: updatedLive.id },
+        });
+      }
     },
   });
 

@@ -28,6 +28,7 @@ import { useAdminPosts, useAdminDeletePost } from "@/hooks/useAdminPosts";
 import { useAdminCreators, useAdminPendingCreators, useApproveCreator } from "@/hooks/useAdminCreators";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { creatorProfilePath } from "@/lib/creatorPaths";
 import { SignedImage } from "@/components/SignedMedia";
 import { useToast } from "@/hooks/use-toast";
 import { useMonthlyRevenue } from "@/hooks/useMonthlyRevenue";
@@ -223,7 +224,7 @@ function UsersTab() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to={u.role === "creator" ? `/creator/${u.id}` : `/profile/${u.id}`}>
+                          <Link to={u.role === "creator" ? creatorProfilePath(u.id, u.handle) : `/profile/${u.id}`}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
@@ -408,7 +409,7 @@ function CreatorsTab() {
                           Ver planos
                         </Button>
                         <Button variant="ghost" size="sm" asChild>
-                          <Link to={`/creator/${c.creator_id}`}>
+                          <Link to={creatorProfilePath(c.creator_id, c.creator_handle)}>
                             <Eye className="h-4 w-4" />
                           </Link>
                         </Button>

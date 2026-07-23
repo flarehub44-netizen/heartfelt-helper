@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { AlertTriangle } from "lucide-react";
 import { useExpiringSubscriptions } from "@/hooks/useMySubscriptions";
 import { PLAN_LABELS } from "@/lib/plans";
+import { setCheckoutIntent, subscribePath } from "@/lib/checkoutIntent";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -14,6 +15,14 @@ export function RenewalBanner() {
   const when = first.expires_at
     ? formatDistanceToNow(new Date(first.expires_at), { locale: ptBR, addSuffix: true })
     : "em breve";
+
+  const renewHref =
+    expiring.length === 1
+      ? subscribePath(first.creator_id, {
+          handle: first.creator_handle,
+          plan: first.plan,
+        })
+      : "/subscriptions";
 
   return (
     <div className="glass-card rounded-2xl p-4 border border-amber-500/30 bg-amber-500/5 flex items-start gap-3">
@@ -29,9 +38,17 @@ export function RenewalBanner() {
         </p>
       </div>
       <Link
-        to={expiring.length === 1
-          ? `/creator/${first.creator_id}?openSubscribe=1`
-          : "/subscriptions"}
+        to={renewHref}
+        onClick={() => {
+          if (expiring.length === 1) {
+            setCheckoutIntent({
+              creatorId: first.creator_id,
+              handle: first.creator_handle,
+              plan: first.plan,
+              amount: first.price,
+            });
+          }
+        }}
         className="flex-shrink-0 rounded-full bg-gradient-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-glow hover:scale-105 transition-transform"
       >
         Renovar agora

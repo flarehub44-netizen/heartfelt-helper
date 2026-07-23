@@ -15,6 +15,8 @@ interface Profile {
   social_links: unknown;
   created_at: string;
   approved: boolean;
+  cpf?: string | null;
+  fan_onboarded?: boolean;
 }
 
 interface AuthContextType {

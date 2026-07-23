@@ -4,16 +4,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useNavigate, useLocation } from "react-router-dom";
 import { getLoginPath } from "@/lib/authRedirect";
+import { usePushSubscription } from "@/hooks/usePushSubscription";
+import { promptPushAfterHighIntent } from "@/lib/promptPush";
 
 export function useFollow(creatorId: string | undefined) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { supported, vapidConfigured, subscribed, permission, enablePush } = usePushSubscription();
 
   const loginPath = getLoginPath(location.pathname + location.search);
 
-  // Check if the current user already follows this creator
   const { data: followData } = useQuery({
     queryKey: ["follow", user?.id, creatorId],
     queryFn: async () => {
@@ -29,7 +31,6 @@ export function useFollow(creatorId: string | undefined) {
     enabled: !!user && !!creatorId,
   });
 
-  // Get followers count for this creator
   const { data: followersCount = 0 } = useQuery({
     queryKey: ["followersCount", creatorId],
     queryFn: async () => {
@@ -63,6 +64,14 @@ export function useFollow(creatorId: string | undefined) {
     onSuccess: () => {
       toast.success("Seguindo!");
       invalidate();
+      void promptPushAfterHighIntent({
+        supported,
+        vapidConfigured,
+        subscribed,
+        permission,
+        enablePush,
+        reason: "Ative alertas para não perder lives desta criadora",
+      });
     },
     onError: () => {
       toast.error("Erro ao seguir. Tente novamente.");

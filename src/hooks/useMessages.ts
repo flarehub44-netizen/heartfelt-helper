@@ -71,19 +71,22 @@ export function useMessages(contactId: string | null) {
       if (!userId || !contactId) throw new Error("Missing user or contact");
 
       if (userId !== contactId) {
-        const { data: sub } = await supabase
-          .from("subscriptions")
-          .select("plan, active, expires_at")
-          .eq("fan_id", userId)
-          .eq("creator_id", contactId)
-          .eq("active", true)
-          .maybeSingle();
-
-        const notExpired =
-          !sub?.expires_at || new Date(sub.expires_at) > new Date();
-
-        if (!sub || sub.plan !== "vip" || !notExpired) {
-          throw new Error("Mensagens diretas são exclusivas para assinantes VIP");
+        const { data: allowed, error: canErr } = await supabase.rpc(
+          "can_message_creator",
+          { p_creator_id: contactId }
+        );
+        if (canErr) throw canErr;
+        if (!allowed) {
+          const { data: creator } = await supabase
+            .from("profiles")
+            .select("dm_price_coins")
+            .eq("id", contactId)
+            .maybeSingle();
+          const price = Number((creator as { dm_price_coins?: number } | null)?.dm_price_coins ?? 0);
+          if (price > 0) {
+            throw new Error(`DM_UNLOCK_REQUIRED:${price}`);
+          }
+          throw new Error("Mensagens diretas exigem assinatura ativa ou desbloqueio");
         }
       }
 
@@ -100,9 +103,24 @@ export function useMessages(contactId: string | null) {
     },
   });
 
+  const unlockDm = useMutation({
+    mutationFn: async () => {
+      if (!contactId) throw new Error("Missing contact");
+      const { error } = await supabase.rpc("unlock_dm_with_coins" as never, {
+        p_creator_id: contactId,
+      } as never);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messages", userId, contactId] });
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+    },
+  });
+
   return {
     messages: messagesQuery.data ?? [],
     isLoading: messagesQuery.isLoading,
     sendMessage,
+    unlockDm,
   };
 }

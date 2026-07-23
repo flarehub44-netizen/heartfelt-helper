@@ -125,6 +125,13 @@ export function NativeLivePlayer({ liveId, isHost, onEnd }: Props) {
         await pc.setLocalDescription(offer);
         setViewers(Object.keys(peersRef.current).length);
         send("offer", { from: myId, to: remoteId, sdp: pc.localDescription });
+        if (isHost) {
+          const count = Object.keys(peersRef.current).length;
+          void supabase.rpc("report_live_viewers" as never, {
+            p_live_id: liveId,
+            p_viewers: count,
+          } as never);
+        }
       })
       .on("broadcast", { event: "offer" }, async ({ payload }) => {
         if (isHost) return;

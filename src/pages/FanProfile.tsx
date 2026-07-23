@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -7,9 +7,13 @@ import { ptBR } from "date-fns/locale";
 import {
   Users, Heart, ChevronLeft, UserCircle2,
   Pencil, Trash2, Video, MessageSquare, Globe, Flame, Diamond, Bookmark,
+  CreditCard, Settings, Coins,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
+import { creatorProfilePath } from "@/lib/creatorPaths";
+import { useExpiringSubscriptions } from "@/hooks/useMySubscriptions";
+import { usePendingCheckouts } from "@/hooks/usePendingCheckouts";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -77,9 +81,19 @@ const PLAN_LABELS: Record<string, { label: string; icon: React.ReactNode; classN
 
 const FanProfile = () => {
   const { id } = useParams<{ id: string }>();
+  const { hash } = useLocation();
   const { user, profile: authProfile } = useAuth();
   const isOwn = user?.id === id;
   const queryClient = useQueryClient();
+  const { data: expiring = [] } = useExpiringSubscriptions(isOwn ? 7 : 0);
+  const { data: pendingCheckouts } = usePendingCheckouts();
+  const hasGmvAction = isOwn && (expiring.length > 0 || (pendingCheckouts?.length ?? 0) > 0);
+
+  useEffect(() => {
+    if (hash !== "#streak") return;
+    const el = document.getElementById("streak");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [hash, id]);
 
   // Edit modal state
   const [editPost, setEditPost] = useState<Post | null>(null);
@@ -296,6 +310,55 @@ const FanProfile = () => {
           </div>
         )}
 
+        {/* Fan hub: Assinaturas / Salvos / Carteira / Settings */}
+        {isOwn && !isCreatorOwner && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            <Link
+              to="/subscriptions"
+              className="glass-card rounded-2xl p-4 flex flex-col gap-2 hover:border-primary/40 transition-colors relative"
+            >
+              {hasGmvAction && (
+                <span className="absolute top-3 right-3 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-background" />
+              )}
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <CreditCard className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Assinaturas</p>
+              <p className="text-[11px] text-muted-foreground">Renovar e gerenciar</p>
+            </Link>
+            <Link
+              to="/bookmarks"
+              className="glass-card rounded-2xl p-4 flex flex-col gap-2 hover:border-primary/40 transition-colors"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Bookmark className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Salvos</p>
+              <p className="text-[11px] text-muted-foreground">Posts marcados</p>
+            </Link>
+            <Link
+              to="/wallet"
+              className="glass-card rounded-2xl p-4 flex flex-col gap-2 hover:border-primary/40 transition-colors"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Coins className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Carteira</p>
+              <p className="text-[11px] text-muted-foreground">Comprar moedas</p>
+            </Link>
+            <Link
+              to="/settings"
+              className="glass-card rounded-2xl p-4 flex flex-col gap-2 hover:border-primary/40 transition-colors"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Settings className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">Configurações</p>
+              <p className="text-[11px] text-muted-foreground">Conta e segurança</p>
+            </Link>
+          </div>
+        )}
+
         {/* Content grid */}
         <div className="grid md:grid-cols-2 gap-6 pb-8">
 
@@ -316,7 +379,7 @@ const FanProfile = () => {
                   return (
                     <Link
                       key={f.creator_id}
-                      to={`/creator/${creator.id}`}
+                      to={creatorProfilePath(creator.id, creator.handle)}
                       className="flex items-center gap-3 hover:bg-muted/40 rounded-xl p-2 -mx-2 transition-colors"
                     >
                       <img
@@ -354,7 +417,7 @@ const FanProfile = () => {
                   return (
                     <Link
                       key={s.creator_id}
-                      to={`/creator/${creator.id}`}
+                      to={creatorProfilePath(creator.id, creator.handle)}
                       className="flex items-center gap-3 hover:bg-muted/40 rounded-xl p-2 -mx-2 transition-colors"
                     >
                       <img
@@ -378,25 +441,6 @@ const FanProfile = () => {
             )}
           </div>
         </div>
-
-        {/* Bookmarks shortcut — visible only to profile owner */}
-        {isOwn && !isCreatorOwner && (
-          <div className="mb-6">
-            <Link
-              to="/bookmarks"
-              className="glass-card rounded-2xl p-5 flex items-center gap-4 hover:border-primary/40 transition-colors group"
-            >
-              <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                <Bookmark className="h-5 w-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-foreground">Conteúdo salvo</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Posts que você marcou no feed</p>
-              </div>
-              <ChevronLeft className="h-4 w-4 text-muted-foreground rotate-180 flex-shrink-0" />
-            </Link>
-          </div>
-        )}
 
         {/* ── My Posts (creator only) ───────────────────────────────── */}
         {isCreatorOwner && (

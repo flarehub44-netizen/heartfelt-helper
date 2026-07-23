@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CreatorLive, useManageLives, NewLive } from "@/hooks/useCreatorLives";
 
@@ -23,6 +24,8 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
   const [status, setStatus] = useState<"scheduled" | "live">("live");
   const [visibility, setVisibility] = useState<"public" | "private">("public");
   const [minPlan, setMinPlan] = useState("fan");
+  const [goalCoins, setGoalCoins] = useState("");
+  const [ticketCoins, setTicketCoins] = useState("");
 
   const reset = () => {
     setTitle("");
@@ -31,6 +34,8 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
     setStatus("live");
     setVisibility("public");
     setMinPlan("fan");
+    setGoalCoins("");
+    setTicketCoins("");
   };
 
   const handleSubmit = async () => {
@@ -50,6 +55,9 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
       scheduled_at: scheduledAt || undefined,
       status,
       min_plan: visibility === "public" ? "free" : minPlan,
+      goal_coins: Math.max(0, parseInt(goalCoins, 10) || 0),
+      ticket_price_coins: Math.max(0, parseInt(ticketCoins, 10) || 0),
+      ingest_mode: "mesh",
     };
 
     try {
@@ -178,6 +186,29 @@ export function ScheduleLiveModal({ open, onClose, creatorId, onCreated }: Props
               </Select>
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Meta de moedas (opcional)</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Ex: 500"
+                value={goalCoins}
+                onChange={(e) => setGoalCoins(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Ingresso PPV (moedas)</Label>
+              <Input
+                type="number"
+                min={0}
+                placeholder="0 = sem ingresso"
+                value={ticketCoins}
+                onChange={(e) => setTicketCoins(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         <DialogFooter className="gap-2">

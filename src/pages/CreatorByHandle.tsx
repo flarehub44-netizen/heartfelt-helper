@@ -1,18 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import CreatorProfile from "@/pages/CreatorProfile";
 
 /**
- * Public creator URL by handle. Resolves @handle to creator id and redirects
- * to /creator/:id (where the existing profile UI lives).
+ * Canonical public creator URL: /u/:handle
+ * Resolves handle → id and renders the profile UI with id injected via history state.
  */
 const CreatorByHandle = () => {
   const { handle } = useParams<{ handle: string }>();
   const navigate = useNavigate();
+  const [creatorId, setCreatorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!handle) return;
     const clean = handle.replace(/^@/, "");
+    let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from("profiles")
@@ -20,19 +23,27 @@ const CreatorByHandle = () => {
         .eq("handle", clean)
         .eq("role", "creator")
         .maybeSingle();
+      if (cancelled) return;
       if (data?.id) {
-        navigate(`/creator/${data.id}`, { replace: true });
+        setCreatorId(data.id);
       } else {
         navigate("/404", { replace: true });
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [handle, navigate]);
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-muted-foreground text-sm">Carregando…</div>
-    </div>
-  );
+  if (!creatorId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground text-sm">Carregando…</div>
+      </div>
+    );
+  }
+
+  return <CreatorProfile creatorIdOverride={creatorId} />;
 };
 
 export default CreatorByHandle;

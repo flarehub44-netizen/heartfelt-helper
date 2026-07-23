@@ -58,6 +58,9 @@ export default function TipCoinsButton({ creatorId, creatorName }: { creatorId: 
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
+          <p className="text-xs text-muted-foreground rounded-lg bg-muted/30 px-3 py-2">
+            Gorjetas em moedas creditam a carteira da criadora (não é Pix direto). Ela pode converter para saque no painel.
+          </p>
           <div className="grid grid-cols-3 gap-2">
             {PRESETS.map((v) => (
               <button

@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SUPABASE_PROJECT_ID, SUPABASE_PUBLISHABLE_KEY } from "@/lib/env";
 
 export interface AdminCreator {
   creator_id: string;
@@ -26,7 +25,15 @@ export function useAdminCreators() {
     queryFn: async () => {
       const { data, error } = await supabase.rpc("get_admin_creator_stats");
       if (error) throw error;
-      return (data ?? []).map((r: any) => ({
+      return (data ?? []).map((r: {
+        creator_id: string;
+        creator_name: string;
+        creator_handle: string | null;
+        creator_category: string | null;
+        active_subs: number;
+        estimated_revenue: number;
+        post_count: number;
+      }) => ({
         creator_id: r.creator_id,
         creator_name: r.creator_name,
         creator_handle: r.creator_handle,
@@ -55,38 +62,15 @@ export function useAdminPendingCreators() {
   });
 }
 
-async function sendCreatorApprovedEmail(creatorId: string) {
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("name")
-    .eq("id", creatorId)
-    .maybeSingle();
-
-  await fetch(`https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/send-notification`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_PUBLISHABLE_KEY,
-    },
-    body: JSON.stringify({
-      user_id: creatorId,
-      subject: "Sua conta criador foi aprovada na Flare",
-      body: `Olá${profile?.name ? ` ${profile.name}` : ""}! Seu perfil de criador foi aprovado. Acesse o dashboard para começar.`,
-      template: "creator_approved",
-    }),
-  }).catch(() => {});
-}
-
 export function useApproveCreator() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (creatorId: string) => {
-      const { error } = await supabase
-        .from("profiles")
-        .update({ approved: true })
-        .eq("id", creatorId);
+      const { data, error } = await supabase.functions.invoke("approve-creator", {
+        body: { creator_id: creatorId },
+      });
       if (error) throw error;
-      await sendCreatorApprovedEmail(creatorId);
+      if (data?.error) throw new Error(String(data.error));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["adminPendingCreators"] });
