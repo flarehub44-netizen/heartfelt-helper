@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-const SIGN_TTL = 60 * 60; // 1 hour
+const SIGN_TTL = 5 * 60; // 5 minutes — short-lived signed URLs for paid content
 
 export interface SignedMediaTransform {
   width?: number;

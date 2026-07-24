@@ -1,22 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import webpush from "npm:web-push@3.6.7";
+import { assertInternalAuth, unauthorizedResponse } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-internal-secret",
+    "authorization, x-client-info, apikey, content-type, x-internal-secret, x-cron-secret",
 };
-
-async function isAuthorized(req: Request): Promise<boolean> {
-  const expected = Deno.env.get("INTERNAL_FN_SECRET");
-  if (expected && req.headers.get("x-internal-secret") === expected) {
-    return true;
-  }
-  const auth = req.headers.get("Authorization") ?? "";
-  const token = auth.replace(/^Bearer\s+/i, "").trim();
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  return !!(token && serviceKey && token === serviceKey);
-}
 
 function defaultUrl(type?: string): string {
   switch (type) {
@@ -42,11 +32,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!(await isAuthorized(req))) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!assertInternalAuth(req)) {
+      return unauthorizedResponse(corsHeaders);
     }
 
     const body = await req.json();

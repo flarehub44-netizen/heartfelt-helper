@@ -1,9 +1,10 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { timingSafeEqualString } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-webhook-secret, x-syncpay-secret",
 };
 
 // Statuses that mean the payment was confirmed and money received
@@ -16,25 +17,27 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Validate shared webhook secret. SyncPay is configured to include it as
-    // either a query string (?secret=...) or an "x-webhook-secret" header.
-    const expectedSecret = Deno.env.get("SYNCPAY_WEBHOOK_SECRET");
-    if (expectedSecret) {
-      const url = new URL(req.url);
-      const provided =
-        req.headers.get("x-webhook-secret") ??
-        req.headers.get("x-syncpay-secret") ??
-        url.searchParams.get("secret") ??
-        "";
-      if (provided !== expectedSecret) {
-        console.warn("Rejected webhook: invalid secret");
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    } else {
-      console.warn("SYNCPAY_WEBHOOK_SECRET not set — webhook is unauthenticated!");
+    // Fail-closed: webhook secret is mandatory
+    const expectedSecret = Deno.env.get("SYNCPAY_WEBHOOK_SECRET") ?? "";
+    if (!expectedSecret) {
+      console.error("SYNCPAY_WEBHOOK_SECRET not set — rejecting webhook");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const url = new URL(req.url);
+    const provided =
+      req.headers.get("x-webhook-secret") ??
+      req.headers.get("x-syncpay-secret") ??
+      url.searchParams.get("secret") ??
+      "";
+    if (!provided || !timingSafeEqualString(provided, expectedSecret)) {
+      console.warn("Rejected webhook: invalid secret");
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const payload = await req.json();
@@ -43,13 +46,15 @@ Deno.serve(async (req) => {
     // SyncPay sends { data: { status, idtransaction, ... } }
     const data = payload.data ?? payload;
     const status = data.status ?? payload.status;
-    const identifier =
+    const identifier = String(
       data.idtransaction ??
-      data.identifier ??
-      data.reference_id ??
-      data.id ??
-      payload.identifier ??
-      payload.reference_id;
+        data.identifier ??
+        data.reference_id ??
+        data.id ??
+        payload.identifier ??
+        payload.reference_id ??
+        ""
+    );
 
     if (!identifier) {
       console.error("No identifier in webhook payload");
@@ -64,6 +69,24 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    /** Claim idempotency key; returns false if already processed. */
+    async function claimWebhook(kind: string): Promise<boolean> {
+      const { error } = await supabase.from("processed_webhooks").insert({
+        syncpay_id: identifier,
+        kind,
+      });
+      if (error) {
+        // unique violation → duplicate
+        if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+          return false;
+        }
+        console.error("processed_webhooks insert error:", error);
+        // Fail closed on unexpected DB errors for paid cash-in paths
+        throw error;
+      }
+      return true;
+    }
 
     // Look up pending payment to get fan_id, creator_id, plan
     const { data: pending, error: pendingErr } = await supabase
@@ -85,6 +108,15 @@ Deno.serve(async (req) => {
         if (PAID_STATUSES.includes(status)) mapped = "completed";
         else if (FAILED_STATUSES.includes(status)) mapped = "failed";
         else if (String(status).toLowerCase() === "pending") mapped = "pending";
+
+        if (mapped === "completed" || mapped === "failed") {
+          const claimed = await claimWebhook("withdrawal");
+          if (!claimed) {
+            return new Response(JSON.stringify({ ok: true, duplicate: true, withdrawal: true }), {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        }
 
         const { error: finErr } = await supabase.rpc("finalize_withdrawal", {
           p_status: mapped,
@@ -131,6 +163,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    const claimed = await claimWebhook("cashin");
+    if (!claimed) {
+      return new Response(JSON.stringify({ ok: true, duplicate: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { fan_id: fanId, creator_id: creatorId, plan, amount, affiliate_ref: affiliateRef } = pending;
 
 
@@ -170,15 +209,6 @@ Deno.serve(async (req) => {
       const packageId = parts[1];
       const totalCoins = parseInt(parts[2] ?? "0", 10);
 
-      // Idempotency: skip if a purchase tx already exists for this identifier
-      const { data: existingTx } = await supabase
-        .from("coin_transactions")
-        .select("id")
-        .eq("type", "purchase")
-        .eq("ref_type", "syncpay")
-        .eq("ref_id", null as unknown as string)
-        .limit(1);
-      // simpler dedupe: try insert via RPC; rely on pending_payments delete to avoid double-fire
       if (!totalCoins || totalCoins <= 0) {
         return new Response(JSON.stringify({ error: "invalid coin amount" }), {
           status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -190,10 +220,11 @@ Deno.serve(async (req) => {
         p_amount: totalCoins,
         p_ref_type: "package",
         p_ref_id: packageId,
-        p_description: `Compra de ${totalCoins} moedas`,
+        p_description: `Compra de ${totalCoins} moedas (syncpay:${identifier})`,
       });
       if (creditErr) {
         console.error("credit_coins error:", creditErr);
+        await supabase.from("processed_webhooks").delete().eq("syncpay_id", identifier);
         return new Response(JSON.stringify({ error: creditErr.message }), {
           status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -342,7 +373,7 @@ Deno.serve(async (req) => {
       console.error("credit_creator_earning subscription error (non-fatal):", earnErr);
     }
 
-    // Register affiliate referral if applicable
+    // Register affiliate referral if applicable (block self-referral)
     if (affiliateRef && newSub) {
       try {
         // Find the affiliate link by code
@@ -353,6 +384,12 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
       if (affLink) {
+          if (
+            affLink.affiliate_id === fanId ||
+            affLink.affiliate_id === creatorId
+          ) {
+            console.log("Skipping self-referral affiliate commission");
+          } else {
           // Check if affiliate is approved
           const { data: affRequest } = await supabase
             .from("affiliate_requests")
@@ -385,6 +422,7 @@ Deno.serve(async (req) => {
 
           console.log(`Affiliate referral created: link=${affLink.id} commission=${commissionAmount}`);
           } // end approved check
+          } // end self-ref check
         }
       } catch (affErr) {
         console.error("Affiliate referral error (non-fatal):", affErr);
@@ -401,12 +439,19 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       const socialLinks = (creatorProfile?.social_links as Record<string, string> | null) ?? {};
+      const metaHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${serviceKey}`,
+        apikey: serviceKey,
+      };
+      const metaSecret = Deno.env.get("META_CAPI_SECRET") ?? "";
+      if (metaSecret) metaHeaders["x-meta-capi-secret"] = metaSecret;
 
       await fetch(
         `https://${projectId}.supabase.co/functions/v1/meta-capi`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: metaHeaders,
           body: JSON.stringify({
             event_name: "Purchase",
             value: amount,

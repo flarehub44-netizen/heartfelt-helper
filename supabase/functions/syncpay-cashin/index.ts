@@ -8,25 +8,6 @@ const corsHeaders = {
 
 const SYNCPAY_BASE = "https://api.syncpayments.com.br";
 
-// In-memory IP rate limit (per edge instance): 20 PIX charges / hour / IP.
-// Complements the per-user DB rate limit (pix_rate_limit) to slow scripted abuse
-// from a single origin using many freshly-registered accounts.
-const IP_RATE_WINDOW_MS = 60 * 60 * 1000;
-const IP_RATE_MAX = 20;
-const ipRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkIpRate(ip: string): boolean {
-  const now = Date.now();
-  const entry = ipRateMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    ipRateMap.set(ip, { count: 1, resetAt: now + IP_RATE_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= IP_RATE_MAX) return false;
-  entry.count++;
-  return true;
-}
-
-
 async function getSyncPayToken(): Promise<string> {
   const clientId = Deno.env.get("SYNCPAY_CLIENT_ID")!;
   const clientSecret = Deno.env.get("SYNCPAY_CLIENT_SECRET")!;
@@ -81,17 +62,10 @@ Deno.serve(async (req) => {
     const fanId = claimsData.claims.sub;
     const fanEmail = claimsData.claims.email as string;
 
-    // IP-based rate limit (per edge instance)
     const clientIp =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       req.headers.get("x-real-ip") ||
       "unknown";
-    if (!checkIpRate(clientIp)) {
-      return new Response(
-        JSON.stringify({ error: "Muitas requisições deste IP. Tente novamente em alguns minutos." }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
     // Service-role client (used for rate limit + pending insert)
     const supabaseAdmin = createClient(
@@ -114,13 +88,26 @@ Deno.serve(async (req) => {
       );
     }
 
-    await supabaseAdmin.from("pix_rate_limit").insert({ user_id: fanId });
+    // IP rate limit in DB (20 / hour) — survives edge isolate restarts
+    const { count: ipCount } = await supabaseAdmin
+      .from("pix_rate_limit")
+      .select("id", { count: "exact", head: true })
+      .eq("ip", clientIp)
+      .gt("created_at", oneHourAgo);
+    if ((ipCount ?? 0) >= 20) {
+      return new Response(
+        JSON.stringify({ error: "Muitas requisições deste IP. Tente novamente em alguns minutos." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    await supabaseAdmin.from("pix_rate_limit").insert({ user_id: fanId, ip: clientIp });
 
     const body = await req.json();
     const { creator_id, plan_name, amount, fan_name, fan_cpf, creator_name, affiliate_ref } =
       body;
 
-    if (!creator_id || !plan_name || !amount || !fan_name || !fan_cpf) {
+    if (!creator_id || !plan_name || !fan_name || !fan_cpf) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         {
@@ -130,6 +117,57 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Resolve amount server-side for subscriptions; tips use clamped client amount
+    let amountFloat: number;
+    if (plan_name === "tip") {
+      const tipAmt = Number(Number(amount).toFixed(2));
+      if (!Number.isFinite(tipAmt) || tipAmt < 1 || tipAmt > 500) {
+        return new Response(
+          JSON.stringify({ error: "Gorjeta deve ser entre R$ 1 e R$ 500" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      amountFloat = tipAmt;
+    } else {
+      const { data: planRow, error: planErr } = await supabaseAdmin
+        .from("creator_plans")
+        .select("price")
+        .eq("creator_id", creator_id)
+        .eq("plan_name", plan_name)
+        .maybeSingle();
+      if (planErr || !planRow) {
+        return new Response(
+          JSON.stringify({ error: "Plano não encontrado" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      amountFloat = Number(Number(planRow.price).toFixed(2));
+      if (!Number.isFinite(amountFloat) || amountFloat <= 0) {
+        return new Response(
+          JSON.stringify({ error: "Preço do plano inválido" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
+    // Block self-affiliate
+    let safeAffiliateRef: string | null =
+      typeof affiliate_ref === "string" && affiliate_ref.trim()
+        ? affiliate_ref.trim()
+        : null;
+    if (safeAffiliateRef) {
+      const { data: affLink } = await supabaseAdmin
+        .from("affiliate_links")
+        .select("affiliate_id")
+        .eq("code", safeAffiliateRef)
+        .maybeSingle();
+      if (
+        affLink &&
+        (affLink.affiliate_id === fanId || affLink.affiliate_id === creator_id)
+      ) {
+        safeAffiliateRef = null;
+      }
+    }
 
     // Get SyncPay bearer token
     const syncpayToken = await getSyncPayToken();
@@ -138,13 +176,17 @@ Deno.serve(async (req) => {
     // Build webhook URL — append shared secret so the webhook can authenticate.
     const projectId = Deno.env.get("SUPABASE_URL")!.split(".")[0].split("//")[1];
     const webhookSecret = Deno.env.get("SYNCPAY_WEBHOOK_SECRET") ?? "";
-    const webhookUrl = webhookSecret
-      ? `https://${projectId}.supabase.co/functions/v1/syncpay-webhook?secret=${encodeURIComponent(webhookSecret)}`
-      : `https://${projectId}.supabase.co/functions/v1/syncpay-webhook`;
+    if (!webhookSecret) {
+      console.error("SYNCPAY_WEBHOOK_SECRET missing — refusing to create charge without callback auth");
+      return new Response(
+        JSON.stringify({ error: "Pagamentos temporariamente indisponíveis" }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const webhookUrl = `https://${projectId}.supabase.co/functions/v1/syncpay-webhook?secret=${encodeURIComponent(webhookSecret)}`;
 
     // Generate Pix charge
     // SyncPay expects amount in BRL (float), NOT cents
-    const amountFloat = Number(Number(amount).toFixed(2));
     const cpfClean = String(fan_cpf).replace(/\D/g, "");
 
     const cashInPayload = {
@@ -243,7 +285,7 @@ Deno.serve(async (req) => {
         creator_id,
         plan: plan_name,
         amount: amountFloat,
-        affiliate_ref: affiliate_ref || null,
+        affiliate_ref: safeAffiliateRef,
       }, { onConflict: "syncpay_id" });
 
     if (pendingErr) {

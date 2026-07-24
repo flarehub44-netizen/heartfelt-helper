@@ -1,28 +1,12 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { resolveUserEmail, sendTransactionalEmail } from "../_shared/email.ts";
+import { assertInternalAuth, unauthorizedResponse } from "../_shared/internalAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-internal-secret",
+    "authorization, x-client-info, apikey, content-type, x-internal-secret, x-cron-secret",
 };
-
-async function isAuthorized(req: Request): Promise<boolean> {
-  const expected = Deno.env.get("INTERNAL_FN_SECRET");
-  if (expected && req.headers.get("x-internal-secret") === expected) {
-    return true;
-  }
-
-  // Allow Edge Functions / cron to call with the service role key
-  const auth = req.headers.get("Authorization") ?? "";
-  const token = auth.replace(/^Bearer\s+/i, "").trim();
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (token && serviceKey && token === serviceKey) {
-    return true;
-  }
-
-  return false;
-}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -30,11 +14,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    if (!(await isAuthorized(req))) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!assertInternalAuth(req)) {
+      return unauthorizedResponse(corsHeaders);
     }
 
     const { to_email, user_id, subject, body, template } = await req.json();
